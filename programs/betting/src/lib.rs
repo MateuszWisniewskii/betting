@@ -15,7 +15,7 @@ declare_id!("EuDe8zmbZeYuaADaJjp8F9zCHm9L7LuAvrsvqLdSCXN4");
 pub mod betting {
     use super::*;
 
-    pub fn create_event(ctx: Context<CreateEvent>) -> Result<()> {
-        create_event::handler(ctx)
+    pub fn create_event(ctx: Context<CreateEvent>, event_index: u64) -> Result<()> {
+        create_event::handler(ctx, event_index)
     }
 }
