@@ -25,8 +25,17 @@ pub struct CreateEvent<'info> {
     pub system_program: Program<'info, System>
 }
 
-pub fn handler(ctx: Context<CreateEvent>, event_index: u64) -> Result<()> {
+pub fn handler(ctx: Context<CreateEvent>, description: String, event_index: u64) -> Result<()> {
     msg!("Greetings from: {:?}", ctx.program_id);
+
+    let event = &mut ctx.accounts.event;
+    event.authority = ctx.accounts.authority.key();
+    event.description = description;
+    event.result = None;
+    event.total_pool = 0;
+    event.total_pool_a = 0;
+    event.total_pool_b = 0;
+    event.resolved = false;
     
     Ok(())
 }
