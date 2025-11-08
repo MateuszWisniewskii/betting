@@ -6,4 +6,11 @@ pub enum BettingError {
     InvalidPrediction,
     #[msg("Wydarzenie sie zakończyło, zostało rozliczone")]
     EventResolved,
+    #[msg("Wydarzenie nie jest jeszcze rozliczone.")]
+    EventNotResolved,
+    #[msg("Nagroda została już odebrana.")]
+    AlreadyClaimed,
+    #[msg("Zakład nie należy do tego wydarzenia.")]
+    InvalidEventLink,
+
 }

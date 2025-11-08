@@ -22,4 +22,12 @@ pub mod betting {
     pub fn place_bet(ctx: Context<PlaceBet>, prediction: u8, amount: u64, event_index: u64) -> Result<()> {
         place_bet::handler(ctx, prediction, amount, event_index)
     }
+
+    pub fn resolve_event(ctx: Context<ResolveEvent>, result: u8) -> Result<()> {
+        resolve_event::handler(ctx, result)
+    }
+
+    pub fn claim_reward(ctx: Context<ClaimReward>) -> Result<()> {
+        claim_reward(ctx)
+    }
 }
