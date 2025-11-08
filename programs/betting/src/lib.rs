@@ -19,7 +19,7 @@ pub mod betting {
         create_event::handler(ctx, description, event_index)
     }
 
-    pub fn place_bet(ctx: Context<PlaceBet>, prediction: u8, amount: u64) -> Result<()> {
-        place_bet::handler(ctx, prediction, amount)
+    pub fn place_bet(ctx: Context<PlaceBet>, prediction: u8, amount: u64, event_index: u64) -> Result<()> {
+        place_bet::handler(ctx, prediction, amount, event_index)
     }
 }
