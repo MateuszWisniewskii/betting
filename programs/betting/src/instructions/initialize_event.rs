@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::EventAccount;
 
 #[derive(Accounts)]
-#[instruction(event_id: u64)]
+#[instruction(_event_id: u64)]
 pub struct InitializeEvent<'info> {
     #[account(mut)]
     pub authority: Signer<'info>, // admin bądź inna jednostka autoryzująca wydarzenie
@@ -12,7 +12,7 @@ pub struct InitializeEvent<'info> {
         init,
         payer = authority,
         space = 8 + EventAccount::INIT_SPACE,
-        seeds = [b"event_seed".as_ref(), event_id.to_le_bytes().as_ref()],
+        seeds = [b"event_seed".as_ref(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub event_account: Account<'info, EventAccount>,

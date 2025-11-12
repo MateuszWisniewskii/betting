@@ -19,7 +19,7 @@ describe("Betting", () => {
     program.programId
   );
 
-    const [teamBAdress] = PublicKey.findProgramAddressSync(
+  const [teamBAdress] = PublicKey.findProgramAddressSync(
     [Buffer.from("option_seed"), event_id.toArrayLike(Buffer, "le", 8), Buffer.from("Team B")],
     program.programId
   );
@@ -70,7 +70,7 @@ describe("Betting", () => {
 
     console.log("Your transaction signature", TeamBTx2);
 
-      const eventAccount = await program.account.eventAccount.fetch(eventAddress);
+    const eventAccount = await program.account.eventAccount.fetch(eventAddress);
 
     console.log("Event name: ", eventAccount.eventName);
     console.log("Event description: ", eventAccount.eventDescription);

@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{EventAccount, OptionAccount};
 
 #[derive(Accounts)]
-#[instruction(event_id: u64, option: String)]
+#[instruction(_event_id: u64, option: String)]
 pub struct InitializeOptions<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -12,7 +12,7 @@ pub struct InitializeOptions<'info> {
         init,
         payer = authority,
         space = 8 + OptionAccount::INIT_SPACE,
-        seeds = [b"option_seed".as_ref(), event_id.to_le_bytes().as_ref(), option.as_ref()],
+        seeds = [b"option_seed".as_ref(), _event_id.to_le_bytes().as_ref(), option.as_ref()],
         bump
     )]
     pub option_account: Account<'info, OptionAccount>,

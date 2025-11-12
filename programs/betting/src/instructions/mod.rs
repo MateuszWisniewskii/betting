@@ -3,3 +3,6 @@ pub use initialize_event::*;
 
 pub mod initialize_options;
 pub use initialize_options::*;
+
+pub mod place_bet;
+pub use place_bet::*;

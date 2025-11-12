@@ -22,4 +22,8 @@ pub mod betting {
     pub fn initialize_options(ctx: Context<InitializeOptions>, _event_id: u64, option: String) -> Result<()> {
         initialize_options::handler(ctx, _event_id, option)
     }
+
+    pub fn place_bet(ctx: Context<PlaceBet>, _event_id: u64, option: String) -> Result<()> {
+        place_bet::handler(ctx, _event_id, option)
+    }
 }
