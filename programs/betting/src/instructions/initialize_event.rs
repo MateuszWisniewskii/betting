@@ -22,7 +22,7 @@ pub struct InitializeEvent<'info> {
 
 pub fn handler(
     ctx: Context<InitializeEvent>,
-    event_id: u64,
+    _event_id: u64,
     start_time: u64,
     end_time: u64,
     event_name: String,
