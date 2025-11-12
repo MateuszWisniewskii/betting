@@ -35,5 +35,6 @@ pub fn handler(
     ctx.accounts.event_account.betting_end = end_time;
     ctx.accounts.event_account.betting_options_index = 0;
     ctx.accounts.event_account.event_resolved = false;
+    ctx.accounts.event_account.total_pool = 0;
     Ok(())
 }

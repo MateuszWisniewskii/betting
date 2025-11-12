@@ -1,13 +1,15 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Betting } from "../target/types/betting";
-import { PublicKey } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 
 describe("Betting", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Betting as Program<Betting>;
 
   const event_id = new anchor.BN(1);
+
+  const betAmount = new anchor.BN(0.1 * LAMPORTS_PER_SOL); // 0.1 SOL
 
   const [eventAddress] = PublicKey.findProgramAddressSync(
     [Buffer.from("event_seed"), event_id.toArrayLike(Buffer, "le", 8)],
@@ -21,6 +23,16 @@ describe("Betting", () => {
 
   const [teamBAdress] = PublicKey.findProgramAddressSync(
     [Buffer.from("option_seed"), event_id.toArrayLike(Buffer, "le", 8), Buffer.from("Team B")],
+    program.programId
+  );
+
+  const [teamAVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from("vault"), event_id.toArrayLike(Buffer, "le", 8), Buffer.from("Team A")],
+    program.programId
+  );
+
+  const [teamBVault] = PublicKey.findProgramAddressSync(
+    [Buffer.from("vault"), event_id.toArrayLike(Buffer, "le", 8), Buffer.from("Team B")],
     program.programId
   );
 
@@ -48,6 +60,7 @@ describe("Betting", () => {
     console.log("Betting end: ", eventAccount.bettingEnd);
     console.log("Betting options index", eventAccount.bettingOptionsIndex);
     console.log("Event Resolved: ", eventAccount.eventResolved);
+    console.log("Event total pool: ", eventAccount.totalPool);
   });
 
   it("Initialize Options", async () => {
@@ -82,17 +95,20 @@ describe("Betting", () => {
     const teamAAccount = await program.account.optionAccount.fetch(teamAAdress);
     console.log("Option name: ", teamAAccount.optionName);
     console.log("Option votes: ", teamAAccount.optionVotes);
+    console.log("Option total pool: ", teamAAccount.optionTotalPool);
 
     const teamBAccount = await program.account.optionAccount.fetch(teamBAdress);
     console.log("Option name: ", teamBAccount.optionName);
     console.log("Option votes: ", teamBAccount.optionVotes);
+    console.log("Option total pool: ", teamBAccount.optionTotalPool);
   });
 
   it("Place bet", async () => {
-    // _event_id: u64, option: String
+    // _event_id: u64, option: String, amount: u64
     const vote1Tx = await program.methods.placeBet(
       event_id,
-      "Team A"
+      "Team A",
+      betAmount,
     ).rpc();
 
     console.log("Your transaction signature", vote1Tx);
@@ -100,22 +116,29 @@ describe("Betting", () => {
     let teamAAccount = await program.account.optionAccount.fetch(teamAAdress);
     console.log("Option name: ", teamAAccount.optionName);
     console.log("Option votes: ", teamAAccount.optionVotes);
+    console.log("Option total pool: ", teamAAccount.optionTotalPool.toString());
+    console.log("Option total pool (SOL): ", teamAAccount.optionTotalPool.toNumber() / LAMPORTS_PER_SOL);
 
     let teamBAccount = await program.account.optionAccount.fetch(teamBAdress);
     console.log("Option name: ", teamBAccount.optionName);
     console.log("Option votes: ", teamBAccount.optionVotes);
+    console.log("Option total pool (lamports): ", teamBAccount.optionTotalPool.toString());
+    console.log("Option total pool (SOL): ", teamBAccount.optionTotalPool.toNumber() / LAMPORTS_PER_SOL);
 
     const vote2Tx = await program.methods.placeBet(
       event_id,
-      "Team A"
+      "Team A",
+      betAmount,
     ).rpc();
     const vote3Tx = await program.methods.placeBet(
       event_id,
-      "Team B"
+      "Team B",
+      betAmount,
     ).rpc();
     const vote4Tx = await program.methods.placeBet(
       event_id,
-      "Team A"
+      "Team A",
+      betAmount,
     ).rpc();
 
     console.log("Your transaction signature", vote2Tx);
@@ -125,9 +148,13 @@ describe("Betting", () => {
     teamAAccount = await program.account.optionAccount.fetch(teamAAdress);
     console.log("Option name: ", teamAAccount.optionName);
     console.log("Option votes: ", teamAAccount.optionVotes);
+    console.log("Option total pool (lamports): ", teamAAccount.optionTotalPool.toString());
+    console.log("Option total pool (SOL): ", teamAAccount.optionTotalPool.toNumber() / LAMPORTS_PER_SOL);
 
     teamBAccount = await program.account.optionAccount.fetch(teamBAdress);
     console.log("Option name: ", teamBAccount.optionName);
     console.log("Option votes: ", teamBAccount.optionVotes);
+    console.log("Option total pool (lamports): ", teamBAccount.optionTotalPool.toString());
+    console.log("Option total pool (SOL): ", teamBAccount.optionTotalPool.toNumber() / LAMPORTS_PER_SOL);
   });
 });
