@@ -70,20 +70,63 @@ describe("Betting", () => {
 
     console.log("Your transaction signature", TeamBTx2);
 
-    const eventAccount = await program.account.eventAccount.fetch(eventAddress);
+    // const eventAccount = await program.account.eventAccount.fetch(eventAddress);
 
-    console.log("Event name: ", eventAccount.eventName);
-    console.log("Event description: ", eventAccount.eventDescription);
-    console.log("Betting start: ", eventAccount.bettingStart);
-    console.log("Betting end: ", eventAccount.bettingEnd);
-    console.log("Betting options index", eventAccount.bettingOptionsIndex);
-    console.log("Event Resolved: ", eventAccount.eventResolved);
+    // console.log("Event name: ", eventAccount.eventName);
+    // console.log("Event description: ", eventAccount.eventDescription);
+    // console.log("Betting start: ", eventAccount.bettingStart);
+    // console.log("Betting end: ", eventAccount.bettingEnd);
+    // console.log("Betting options index", eventAccount.bettingOptionsIndex);
+    // console.log("Event Resolved: ", eventAccount.eventResolved);
 
     const teamAAccount = await program.account.optionAccount.fetch(teamAAdress);
     console.log("Option name: ", teamAAccount.optionName);
     console.log("Option votes: ", teamAAccount.optionVotes);
 
     const teamBAccount = await program.account.optionAccount.fetch(teamBAdress);
+    console.log("Option name: ", teamBAccount.optionName);
+    console.log("Option votes: ", teamBAccount.optionVotes);
+  });
+
+  it("Place bet", async () => {
+    // _event_id: u64, option: String
+    const vote1Tx = await program.methods.placeBet(
+      event_id,
+      "Team A"
+    ).rpc();
+
+    console.log("Your transaction signature", vote1Tx);
+
+    let teamAAccount = await program.account.optionAccount.fetch(teamAAdress);
+    console.log("Option name: ", teamAAccount.optionName);
+    console.log("Option votes: ", teamAAccount.optionVotes);
+
+    let teamBAccount = await program.account.optionAccount.fetch(teamBAdress);
+    console.log("Option name: ", teamBAccount.optionName);
+    console.log("Option votes: ", teamBAccount.optionVotes);
+
+    const vote2Tx = await program.methods.placeBet(
+      event_id,
+      "Team A"
+    ).rpc();
+    const vote3Tx = await program.methods.placeBet(
+      event_id,
+      "Team B"
+    ).rpc();
+    const vote4Tx = await program.methods.placeBet(
+      event_id,
+      "Team A"
+    ).rpc();
+
+    console.log("Your transaction signature", vote2Tx);
+    console.log("Your transaction signature", vote3Tx);
+    console.log("Your transaction signature", vote4Tx);
+
+    teamAAccount = await program.account.optionAccount.fetch(teamAAdress);
+    console.log("Option name: ", teamAAccount.optionName);
+    console.log("Option votes: ", teamAAccount.optionVotes);
+
+    teamBAccount = await program.account.optionAccount.fetch(teamBAdress);
     console.log("Option name: ", teamBAccount.optionName);
     console.log("Option votes: ", teamBAccount.optionVotes);
   });
