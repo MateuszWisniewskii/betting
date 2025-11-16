@@ -7,5 +7,9 @@ pub enum ErrorCode {
     #[msg("Obstawianie zakończyło się")]
     BettingEnded,
     #[msg("Wydarzenie jeszcze się nie skończyło")]
-    EventDoesNotEnded
+    EventDoesNotEnded,
+    #[msg("Wydarzenie jeszcze nie zostało rozwiązane przez authority")]
+    EventIsNotResolved,
+    #[msg("Nagroda została już odebrana")]
+    RewardAlreadyClaimed,
 }

@@ -38,11 +38,14 @@ pub fn handler(
     event_description: String,
 ) -> Result<()> {
     //msg!("Greetings from: {:?}", ctx.program_id);
-    ctx.accounts.event_account.event_name = event_name;
-    ctx.accounts.event_account.event_description = event_description;
-    ctx.accounts.event_account.betting_start = start_time;
-    ctx.accounts.event_account.betting_end = end_time;
-    ctx.accounts.event_account.betting_options_index = 0;
-    ctx.accounts.event_account.event_resolved = false;
+    let event = &mut ctx.accounts.event_account;
+    event.event_name = event_name;
+    event.event_description = event_description;
+    event.betting_start = start_time;
+    event.betting_end = end_time;
+    event.betting_options_index = 0;
+    event.event_resolved = false;
+    event.total_pool = 0;
+    
     Ok(())
 }

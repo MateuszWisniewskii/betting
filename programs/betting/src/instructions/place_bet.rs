@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 
-use crate::{BetAccount, EventAccount, OptionAccount, VaultAccount};
+use crate::{BetAccount, EventAccount, OptionAccount, VaultAccount, event_account};
 
 use crate::error::ErrorCode;
 
@@ -52,6 +52,7 @@ pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u
     let vault = &ctx.accounts.vault_account;
     let player = &ctx.accounts.player;
     let bet = &mut ctx.accounts.bet_account;
+    let event_account = &mut ctx.accounts.event_account;
 
     bet.player = player.key();
     bet.event_id = _event_id;
@@ -59,15 +60,17 @@ pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u
     bet.amount = amount;
     bet.reward_claimed = false;
 
-    if current_time > (ctx.accounts.event_account.betting_end as i64) {
+    if current_time > (event_account.betting_end as i64) {
         return Err(ErrorCode::BettingEnded.into());
     }
 
-    if current_time <= (ctx.accounts.event_account.betting_start as i64) {
+    if current_time <= (event_account.betting_start as i64) {
         return Err(ErrorCode::BettingNotStarted.into());
     }
 
     option_account.option_votes += 1;
+    option_account.option_pool += amount;
+    event_account.total_pool += amount;
 
     let transfer_context = CpiContext::new(
         system_program.to_account_info(),

@@ -31,5 +31,7 @@ pub mod betting {
         resolve_event::handler(ctx, _event_id)
     }
 
-    pub fn claim_reward()
+    pub fn claim_reward(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
+        claim_reward::handler(ctx, _event_id)
+    }
 }

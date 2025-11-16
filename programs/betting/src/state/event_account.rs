@@ -13,4 +13,5 @@ pub struct EventAccount {
     pub event_resolved: bool, // zmienna warunkująca, kiedy wydarzenie się skończyło i można odbierać nagrodę 
     #[max_len(20)]
     pub winning_option: String, // nazwa zwycięskiej drużyny
+    pub total_pool: u64,
 }

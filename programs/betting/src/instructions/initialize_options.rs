@@ -28,6 +28,7 @@ pub fn handler(ctx: Context<InitializeOptions>, _event_id: u64, option: String) 
     //msg!("Greetings from: {:?}", ctx.program_id);
     ctx.accounts.option_account.option_name = option;
     ctx.accounts.option_account.option_votes = 0;
+    ctx.accounts.option_account.option_pool = 0;
     ctx.accounts.event_account.betting_options_index += 1;
     Ok(())
 }
