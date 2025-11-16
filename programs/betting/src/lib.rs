@@ -23,7 +23,13 @@ pub mod betting {
         initialize_options::handler(ctx, _event_id, option)
     }
 
-    pub fn place_bet(ctx: Context<PlaceBet>, _event_id: u64, option: String) -> Result<()> {
-        place_bet::handler(ctx, _event_id, option)
+    pub fn place_bet(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u64) -> Result<()> {
+        place_bet::handler(ctx, _event_id, option, amount)
     }
+
+    pub fn resolve_event(ctx: Context<ResolveEvent>, _event_id: u64) -> Result<()> {
+        resolve_event::handler(ctx, _event_id)
+    }
+
+    pub fn claim_reward()
 }

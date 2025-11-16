@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::EventAccount;
+use crate::{EventAccount, VaultAccount};
 
 #[derive(Accounts)]
 #[instruction(_event_id: u64)]
@@ -16,6 +16,15 @@ pub struct InitializeEvent<'info> {
         bump
     )]
     pub event_account: Account<'info, EventAccount>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + VaultAccount::INIT_SPACE,
+        seeds = [b"vault".as_ref(), _event_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub vault_account: Account<'info, VaultAccount>,
 
     pub system_program: Program<'info, System>,
 }

@@ -6,4 +6,6 @@ pub enum ErrorCode {
     BettingNotStarted,
     #[msg("Obstawianie zakończyło się")]
     BettingEnded,
+    #[msg("Wydarzenie jeszcze się nie skończyło")]
+    EventDoesNotEnded
 }
