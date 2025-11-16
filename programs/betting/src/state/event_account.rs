@@ -11,5 +11,7 @@ pub struct EventAccount {
     pub betting_end: u64, // moment zakończenia możliwości obstawiania
     pub betting_options_index: u64, // liczba opisująca ilość kandydatów/opcji do głosowania (w przypadku piłki nożnej będą tylko dwie opcje)
     pub event_resolved: bool, // zmienna warunkująca, kiedy wydarzenie się skończyło i można odbierać nagrodę 
-    pub total_pool: u64, // suma wszystkich zakładów w wydarzeniu
+    pub total_pool: u64, // suma wszystkich zakładów w wydarzeniu,
+    #[max_len(20)]
+    pub winning_option: Option<String>, // zwycięska drużyna
 }
