@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 
-use crate::{BetAccount, EventAccount, OptionAccount, VaultAccount, event_account};
+use crate::{BetAccount, EventAccount, OptionAccount, ANCHOR_DISCRIMINATOR_SIZE};
 
 use crate::error::ErrorCode;
 
@@ -25,17 +25,18 @@ pub struct PlaceBet<'info> {
     )]
     pub option_account: Account<'info, OptionAccount>,
 
+    /// CHECK: There is no data. Konto do trzymania waluty.
     #[account(
         mut,
         seeds = [b"vault".as_ref(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
-    pub vault_account: Account<'info, VaultAccount>,
+    pub vault_account: AccountInfo<'info>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = player,
-        space = 8 + BetAccount::INIT_SPACE,
+        space = ANCHOR_DISCRIMINATOR_SIZE + BetAccount::INIT_SPACE,
         seeds = [b"bet".as_ref(), player.key().as_ref(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
@@ -47,18 +48,17 @@ pub struct PlaceBet<'info> {
 
 pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u64) -> Result<()> {
     let option_account = &mut ctx.accounts.option_account;
-    let current_time = Clock::get()?.unix_timestamp;
-    let system_program = &ctx.accounts.system_program;
-    let vault = &ctx.accounts.vault_account;
-    let player = &ctx.accounts.player;
+    let system_program = &mut ctx.accounts.system_program;
+    let vault = &mut ctx.accounts.vault_account;
+    let player = &mut ctx.accounts.player;
     let bet = &mut ctx.accounts.bet_account;
     let event_account = &mut ctx.accounts.event_account;
 
-    bet.player = player.key();
-    bet.event_id = _event_id;
-    bet.option = option;
-    bet.amount = amount;
-    bet.reward_claimed = false;
+    let current_time = Clock::get()?.unix_timestamp;
+
+    if bet.bet_placed {
+        return Err(ErrorCode::BetAlreadyPlaced.into());
+    }
 
     if current_time > (event_account.betting_end as i64) {
         return Err(ErrorCode::BettingEnded.into());
@@ -67,10 +67,6 @@ pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u
     if current_time <= (event_account.betting_start as i64) {
         return Err(ErrorCode::BettingNotStarted.into());
     }
-
-    option_account.option_votes += 1;
-    option_account.option_pool += amount;
-    event_account.total_pool += amount;
 
     let transfer_context = CpiContext::new(
         system_program.to_account_info(),
@@ -81,6 +77,54 @@ pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u
     );
 
     transfer(transfer_context, amount)?;
+
+    bet.player = player.key();
+    bet.event_id = _event_id;
+    bet.option = option;
+    bet.amount = amount;
+    bet.reward_claimed = false;
+    bet.bet_placed = true;
+
+    option_account.option_votes += 1;
+    option_account.option_pool += amount;
+    event_account.total_pool += amount;
+
+    msg!("Nazwa drużyny: {}", option_account.option_name);
+    msg!("Ilość oddanych zakładów: {}", option_account.option_votes);
+    msg!(
+        "Łączna wartość zakładów na daną drużynę: {}",
+        option_account.option_pool
+    );
+
+    msg!("Nazwa wydarzenia: {}", event_account.event_name);
+    msg!("Opis wydarzenia: {}", event_account.event_description);
+    msg!(
+        "Termin rozpoczęcia przyjmowania zakładów: {}",
+        event_account.betting_start
+    );
+    msg!(
+        "Termin zakończenia przyjmowania zakładów: {}",
+        event_account.betting_start
+    );
+    msg!(
+        "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
+        event_account.betting_options_index
+    );
+    msg!(
+        "Czy wydarzenie zostało zakończone?: {}",
+        event_account.event_resolved
+    );
+    msg!(
+        "Nazwa zwycięskiej drużyny: {}",
+        event_account.winning_option
+    );
+    msg!("Całkowita pula: {}", event_account.total_pool);
+
+    msg!("Osoba obstawiająca: {}", bet.player);
+    msg!("ID wydarzenia: {}", bet.event_id);
+    msg!("Nazwa drużyny: {}", bet.option);
+    msg!("Obstawiona kwota: {}", bet.amount);
+    msg!("Czy nagroda została odebrana: {}", bet.reward_claimed);
 
     Ok(())
 }
