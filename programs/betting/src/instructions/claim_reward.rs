@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, system_program::{Transfer, transfer}};
 
-use crate::{error::ErrorCode, BetAccount, EventAccount, VaultAccount};
+use crate::{error::ErrorCode, BetAccount, EventAccount, OptionAccount, VaultAccount};
 
 #[derive(Accounts)]
 #[instruction(_event_id: u64)]
@@ -31,6 +31,13 @@ pub struct ClaimReward<'info> {
     )]
     pub event_account: Account<'info, EventAccount>,
 
+    #[account(
+        mut,
+        seeds = [b"option_seed".as_ref(), _event_id.to_le_bytes().as_ref(), bet_account.option.as_ref()],
+        bump
+    )]
+    pub option_account: Account<'info, OptionAccount>,
+
     #[account()]
     pub system_program: Program<'info, System>,
 }
@@ -40,6 +47,8 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
     let bet = &mut ctx.accounts.bet_account;
     let vault = &mut ctx.accounts.vault_account;
     let event = &mut ctx.accounts.event_account;
+    let option = &mut &ctx.accounts.option_account;
+    let system_program = &ctx.accounts.system_program;
     let current_time = Clock::get()?.unix_timestamp;
 
     if current_time < (event.betting_start as i64) {
@@ -64,10 +73,33 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
         return Ok(());
     }
 
-    //payout = (user_bet_amount / total_bets_on_winner) * total_vault_balance
-    
+    // payout = (user_bet_amount / total_bets_on_winner) * total_vault_balance
+    //
+    // skoro zwycięzcy dostają całą pule to każdy zwycięzca dostaje proporcjonalny kawałek
+    // przykład: pula A = 50, pula B (wygrana) = 100, całkowita pula = 150
+    // jeżeli użytkownik postawił 10 na zwycięską pulę to jego udział w zwycięskiej puli równy jest 10/100 = 0,1
+    // więc nagroda dla niego wynosi 0,1 * 150 = 15
+    // gdyby był tylko jeszcze jeden gracz, który obstawił 90 na wygraną opcję, jego udział w tej puli wynosi 90/100 = 0,9
+    // stąd jego nagroda wynosi 0,9 * 150 = 135
+    // po dodaniu dwóch wygranych 135 + 15 = 150, widać że cała pula została proporcjonalnie podzielona między graczy, którzy obstawili zwycięską drużynę
 
-    
+    let total_winner_pool = option.option_pool;
+    let total_pool = event.total_pool;
+    let payout = (bet.amount as u128)
+        .checked_mul(total_pool as u128)
+        .unwrap()
+        / (total_winner_pool as u128);
 
+    let transfer_context = CpiContext::new(
+        system_program.to_account_info(),
+        Transfer {
+            from: vault.to_account_info(),
+            to: player.to_account_info(),
+        },
+    );
+
+    transfer(transfer_context, payout as u64)?;
+    bet.reward_claimed = true;
+    
     Ok(())
 }
