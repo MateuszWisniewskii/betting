@@ -199,4 +199,5 @@ describe("Betting", () => {
       throw new Error("Event should be resolved but is NOT!");
     }
   });
+  //
 });
