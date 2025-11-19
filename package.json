@@ -2,7 +2,8 @@
   "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "test": "pkill solana-test-validator; solana-test-validator --reset --quiet --slots-per-epoch 50 --set-mock-clock 1700000000 & sleep 2 && anchor test"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.0"
