@@ -31,5 +31,29 @@ pub fn handler(ctx: Context<ResolveEvent>, _event_id: u64) -> Result<()> {
 
     event.event_resolved = true;
 
+    msg!("Nazwa wydarzenia: {}", event.event_name);
+    msg!("Opis wydarzenia: {}", event.event_description);
+    msg!(
+        "Termin rozpoczęcia przyjmowania zakładów: {}",
+        event.betting_start
+    );
+    msg!(
+        "Termin zakończenia przyjmowania zakładów: {}",
+        event.betting_end
+    );
+    msg!(
+        "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
+        event.betting_options_index
+    );
+    msg!(
+        "Czy wydarzenie zostało zakończone?: {}",
+        event.event_resolved
+    );
+    msg!(
+        "Nazwa zwycięskiej drużyny: {}",
+        event.winning_option
+    );
+    msg!("Całkowita pula: {}", event.total_pool);
+
     Ok(())
 }

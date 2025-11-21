@@ -38,7 +38,7 @@ pub fn handler(
     event_description: String,
 ) -> Result<()> {
     let event = &mut ctx.accounts.event_account;
-    let vault = &mut ctx.accounts.vault_account;
+    let _vault = &mut ctx.accounts.vault_account;
 
     event.event_name = event_name;
     event.event_description = event_description;
@@ -59,7 +59,7 @@ pub fn handler(
     );
     msg!(
         "Termin zakończenia przyjmowania zakładów: {}",
-        event.betting_start
+        event.betting_end
     );
     msg!(
         "Aktualna liczba drużyn birących udział w wydarzeniu: {}",

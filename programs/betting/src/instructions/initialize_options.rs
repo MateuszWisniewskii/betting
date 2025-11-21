@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{ANCHOR_DISCRIMINATOR_SIZE, EventAccount, OptionAccount, option_account};
+use crate::{ANCHOR_DISCRIMINATOR_SIZE, EventAccount, OptionAccount};
 
 #[derive(Accounts)]
 #[instruction(_event_id: u64, option: String)]
@@ -45,7 +45,7 @@ pub fn handler(ctx: Context<InitializeOptions>, _event_id: u64, option: String) 
     );
     msg!(
         "Termin zakończenia przyjmowania zakładów: {}",
-        event.betting_start
+        event.betting_end
     );
     msg!(
         "Aktualna liczba drużyn birących udział w wydarzeniu: {}",

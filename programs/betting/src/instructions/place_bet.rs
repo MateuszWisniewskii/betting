@@ -104,7 +104,7 @@ pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u
     );
     msg!(
         "Termin zakończenia przyjmowania zakładów: {}",
-        event_account.betting_start
+        event_account.betting_end
     );
     msg!(
         "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
