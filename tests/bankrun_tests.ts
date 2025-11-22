@@ -9,58 +9,60 @@ import { Clock, start } from "solana-bankrun";
 const IDL = require("../target/idl/betting.json");
 
 describe("testyy", () => {
-  it("betting", async () => {
-    const context = await startAnchor("../betting", [], []);
-    const provider = new BankrunProvider(context);
+  // ZMIENNE GLOBALNE DLA TESTU
+  let context;
+  let provider;
+  let puppetProgram;
 
-    const puppetProgram = new Program<Betting>(
-      IDL,
-      provider,
-    );
+  let client;
+  let currentClock;
 
-    let eventId = 1;
-    let bettingStart = 1700000000;
-    let bettingEnd = 1700010000;
-    let eventName = "Nazwa testowego wydarzenia";
-    let eventDescription = "Opis testowego wydarzenia";
-    let nameTeamA = "Team A";
-    let nameTeamB = "Team B";
+  let eventId = 1;
+  let bettingStart = 1700000000;
+  let bettingEnd = 1700010000;
+  let eventName = "Nazwa testowego wydarzenia";
+  let eventDescription = "Opis testowego wydarzenia";
+  let nameTeamA = "Team A";
+  let nameTeamB = "Team B";
 
-    const [eventPda] = PublicKey.findProgramAddressSync(
+  let eventPda;
+  let vaultPda;
+  let teamAPda;
+  let teamBPda;
+
+  before("initialization", async () => {
+    context = await startAnchor("../betting", [], []);
+    provider = new BankrunProvider(context);
+
+    puppetProgram = new Program<Betting>(IDL, provider);
+
+    // PDA
+    [eventPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("event_seed"), new BN(eventId).toArrayLike(Buffer, "le", 8)],
       puppetProgram.programId
     );
 
-    const [vaultPda] = PublicKey.findProgramAddressSync(
+    [vaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), new BN(eventId).toArrayLike(Buffer, "le", 8)],
       puppetProgram.programId
     );
 
-    const [teamAPda] = PublicKey.findProgramAddressSync(
+    [teamAPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("option_seed"), new BN(eventId).toArrayLike(Buffer, "le", 8), Buffer.from("Team A")],
       puppetProgram.programId
     );
 
-    const [teamBPda] = PublicKey.findProgramAddressSync(
+    [teamBPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("option_seed"), new BN(eventId).toArrayLike(Buffer, "le", 8), Buffer.from("Team B")],
       puppetProgram.programId
     );
 
-    const client = context.banksClient;
-    let currentClock = await client.getClock();
-    console.log("Aktualny czas: ", currentClock.unixTimestamp);
-    context.setClock(
-      new Clock(
-        currentClock.slot,
-        currentClock.epochStartTimestamp,
-        currentClock.epoch,
-        currentClock.leaderScheduleEpoch,
-        BigInt(1000),
-      ),
-    );
+    // CLOCK
+    client = context.banksClient;
     currentClock = await client.getClock();
-    console.log("Aktualny czas: ", currentClock.unixTimestamp);
+  });
 
+  it("Initialize event", async () => {
     await puppetProgram.methods.initializeEvent(
       new BN(eventId),
       new BN(bettingStart),
@@ -73,7 +75,9 @@ describe("testyy", () => {
       vaultAccount: vaultPda,
       systemProgram: SystemProgram.programId
     }).rpc();
+  });
 
+  it("Initialize options", async () => {
     await puppetProgram.methods.initializeOptions(
       new BN(eventId),
       nameTeamA,
@@ -93,14 +97,16 @@ describe("testyy", () => {
       eventAccount: eventPda,
       systemProgram: SystemProgram.programId,
     }).rpc();
+  });
 
+  it("Resolve event", async () => {
     context.setClock(
       new Clock(
         currentClock.slot,
         currentClock.epochStartTimestamp,
         currentClock.epoch,
         currentClock.leaderScheduleEpoch,
-        BigInt(1700010000), //1700009999
+        BigInt(1700010000), //tuż przed zakończeniem głosowania: 1700009999 , równo zakończenie możliwości głosowania: 1700010000
       ),
     );
     currentClock = await client.getClock();
@@ -113,6 +119,6 @@ describe("testyy", () => {
       eventAccount: eventPda,
       systemProgram: SystemProgram.programId,
     }).rpc();
-
   });
 });
+
