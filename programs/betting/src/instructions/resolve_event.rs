@@ -21,7 +21,7 @@ pub struct ResolveEvent<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<ResolveEvent>, _event_id: u64) -> Result<()> {
+pub fn handler(ctx: Context<ResolveEvent>, _event_id: u64, winning_option: String) -> Result<()> {
     let current_time = Clock::get()?.unix_timestamp;
     let event = &mut ctx.accounts.event_account;
 
@@ -29,6 +29,7 @@ pub fn handler(ctx: Context<ResolveEvent>, _event_id: u64) -> Result<()> {
         return Err(ErrorCode::EventDoesNotEnded.into());
     }
 
+    event.winning_option = winning_option;
     event.event_resolved = true;
 
     msg!("Nazwa wydarzenia: {}", event.event_name);
