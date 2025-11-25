@@ -12,7 +12,7 @@ pub enum ErrorCode {
     EventIsNotResolved,
     #[msg("Nagroda została już odebrana")]
     RewardAlreadyClaimed,
-    #[msg("Obstawiana kwota nie może być ujemna")]
+    #[msg("Obstawiana kwota nie może być ujemna, ani zerowa")]
     InvalidBetAmount,
     #[msg("Zakład został już złożony, nie można głosować drugi raz")]
     BetAlreadyPlaced

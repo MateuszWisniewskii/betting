@@ -12,6 +12,7 @@ pub struct ResolveEvent<'info> {
 
     #[account(
         mut,
+        has_one = authority,
         seeds = [b"event_seed".as_ref(), _event_id.to_le_bytes().as_ref()],
         bump
     )]

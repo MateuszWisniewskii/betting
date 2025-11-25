@@ -68,6 +68,10 @@ pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u
         return Err(ErrorCode::BettingNotStarted.into());
     }
 
+    if amount <= 0 {
+    return Err(ErrorCode::InvalidBetAmount.into()); 
+}
+
     let transfer_context = CpiContext::new(
         system_program.to_account_info(),
         Transfer {

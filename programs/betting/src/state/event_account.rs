@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(InitSpace)]
 pub struct EventAccount {
+    pub authority: Pubkey,
     #[max_len(40)]
     pub event_name: String, // nazwa wydarzenia np. drużyna A vs drużyna B
     #[max_len(200)]

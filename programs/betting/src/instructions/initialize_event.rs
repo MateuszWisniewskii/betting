@@ -40,6 +40,7 @@ pub fn handler(
     let event = &mut ctx.accounts.event_account;
     let _vault = &mut ctx.accounts.vault_account;
 
+    event.authority = ctx.accounts.authority.key();
     event.event_name = event_name;
     event.event_description = event_description;
     event.betting_start = start_time;

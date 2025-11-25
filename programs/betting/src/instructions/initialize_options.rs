@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{ANCHOR_DISCRIMINATOR_SIZE, EventAccount, OptionAccount};
+use crate::{EventAccount, OptionAccount, ANCHOR_DISCRIMINATOR_SIZE};
 
 #[derive(Accounts)]
 #[instruction(_event_id: u64, option: String)]
@@ -17,7 +17,10 @@ pub struct InitializeOptions<'info> {
     )]
     pub option_account: Account<'info, OptionAccount>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        has_one = authority,
+    )]
     pub event_account: Account<'info, EventAccount>,
 
     #[account()]
@@ -27,7 +30,7 @@ pub struct InitializeOptions<'info> {
 pub fn handler(ctx: Context<InitializeOptions>, _event_id: u64, option: String) -> Result<()> {
     let option_account = &mut ctx.accounts.option_account;
     let event = &mut ctx.accounts.event_account;
-    
+
     option_account.option_name = option;
     option_account.option_votes = 0;
     option_account.option_pool = 0;
@@ -35,7 +38,10 @@ pub fn handler(ctx: Context<InitializeOptions>, _event_id: u64, option: String) 
 
     msg!("Nazwa drużyny: {}", option_account.option_name);
     msg!("Ilość oddanych zakładów: {}", option_account.option_votes);
-    msg!("Łączna wartość zakładów na daną drużynę: {}", option_account.option_pool);
+    msg!(
+        "Łączna wartość zakładów na daną drużynę: {}",
+        option_account.option_pool
+    );
 
     msg!("Nazwa wydarzenia: {}", event.event_name);
     msg!("Opis wydarzenia: {}", event.event_description);
