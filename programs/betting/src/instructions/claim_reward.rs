@@ -94,14 +94,34 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
         .unwrap()
         / (total_winner_pool as u128);
 
-    let transfer_context = CpiContext::new(
+    // let transfer_context = CpiContext::new(
+    //     system_program.to_account_info(),
+    //     Transfer {
+    //         from: vault.to_account_info(),
+    //         to: player.to_account_info(),
+    //     },
+    // );
+
+    // transfer(transfer_context, payout as u64)?;
+
+    let bump = ctx.bumps.vault_account;
+
+    let event_id_bytes = _event_id.to_le_bytes();
+    let vault_seeds = &[
+        b"vault".as_ref(),
+        event_id_bytes.as_ref(),
+        &[bump],
+    ];
+    let signer_seeds = &[&vault_seeds[..]];
+
+    let transfer_context = CpiContext::new_with_signer(
         system_program.to_account_info(),
         Transfer {
             from: vault.to_account_info(),
             to: player.to_account_info(),
         },
+        signer_seeds,
     );
-
     transfer(transfer_context, payout as u64)?;
     bet.reward_claimed = true;
 
