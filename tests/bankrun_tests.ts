@@ -3,41 +3,114 @@ import { Program, BN } from "@coral-xyz/anchor";
 import { Betting } from "../target/types/betting";
 import { BankrunProvider, startAnchor } from "anchor-bankrun";
 import { AccountInfo, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
-import { Clock, start } from "solana-bankrun";
+import { Clock } from "solana-bankrun";
 
 const IDL = require("../target/idl/betting.json");
 
-describe("testyy", () => {
-  // ZMIENNE GLOBALNE DLA TESTU
+// funkcje ułatwiające manipulacje czasem
+async function setClock(context: any, newTimestamp: number | bigint) {
+  const client = context.banksClient;
+  const oldClock = await client.getClock();
+
+  const newClock = new Clock(
+    oldClock.slot,
+    oldClock.epochStartTimestamp,
+    oldClock.epoch,
+    oldClock.leaderScheduleEpoch,
+    BigInt(newTimestamp), //tuż przed zakończeniem głosowania: 1700009999 , równo zakończenie możliwości głosowania: 1700010000
+  );
+
+  context.setClock(newClock);
+  return newClock;
+}
+
+// funkcja do wyświetlania aktualnego czasu
+function logClock(clock: Clock) {
+  console.log("---------------------------");
+  console.log("Aktualny czas w symulacji (Unix Timestamp):", clock.unixTimestamp);
+  console.log("Aktualny czas w symulacji:", new Date(Number(clock.unixTimestamp) * 1000).toLocaleString());
+  console.log("---------------------------");
+}
+
+// funkcja do wyświetlania danego PDA oraz seedów
+function logPda(name: string, pda: PublicKey, seeds: (Buffer | Uint8Array | string)[]) {
+  console.log("---------------------------");
+  console.log(`${name} PDA: ${pda.toBase58()}`);
+  console.log("Seeds:");
+  seeds.forEach((s, i) => {
+    if (typeof s === "string") {
+      console.log(`  [${i}]: "${s}"`);
+    } else if (s instanceof Buffer || s instanceof Uint8Array) {
+      console.log(`  [${i}]:`, Buffer.from(s).toString("hex"));
+    } else {
+      console.log(`  [${i}]:`, s);
+    }
+  });
+  console.log("---------------------------");
+}
+
+// funkcja do wyświetlania balancu danego konta
+async function printBalance(context: any, name: string, publicKey: PublicKey) {
+  const balance = await context.banksClient.getBalance(publicKey);
+
+  console.log("---------------------------");
+  console.log(`${name} publicKey: ${publicKey.toBase58()}`);
+  console.log(`${name} lamports: ${balance}`);
+  console.log(`${name} SOL: ${Number(balance) / 1_000_000_000}`);
+  console.log("---------------------------");
+}
+
+// funkcja do konwersji kwoty w SOL na lamporty
+function solToLamports(solAmount: number) {
+  return solAmount * anchor.web3.LAMPORTS_PER_SOL;
+}
+
+describe("Ogólny test działania kontraktu", () => {
+  // zmienne globalne dla testu
+
+  // niezbędne zmienne do działania bankrun
   let context;
   let provider;
   let puppetProgram;
 
+  // zmienne wymagane do manipulacji czasem
   let client;
   let currentClock;
 
+  // zmienne do utwworzenia kontraktu
   let eventId = 1;
-  let eventIdBN = new BN(eventId);
-  let bettingStart = 1700000000;
-  let bettingEnd = 1700010000;
+  let bettingStart = 1700000000; // Unix Timestamp. Tue Nov 14 2023 23:13:20 GMT+0100 (czas środkowoeuropejski standardowy)
+  let bettingEnd = 1700010000; // Wed Nov 15 2023 02:00:00 GMT+0100 (czas środkowoeuropejski standardowy)
   let eventName = "Nazwa testowego wydarzenia";
   let eventDescription = "Opis testowego wydarzenia";
   let nameTeamA = "Team A";
   let nameTeamB = "Team B";
 
+  // konta użytkowników
+  let authority; // admin bądź jednostka odpowiedzialna za tworzenie i zarządzanie wydarzeniem 
+  let userA; // zwykły użytkownik kontraktu, który bierze udział w obstawianiu
+  let userB;
+  let userC;
+
+  // seedy dla adresów pochodnych programu
+  let eventSeeds;
+  let vaultSeeds;
+  let teamASeeds;
+  let teamBSeeds;
+  let userABetSeeds;
+  let userBBetSeeds;
+  let userCBetSeeds;
+
+  // adresy pochodne programu
   let eventPda;
   let vaultPda;
   let teamAPda;
   let teamBPda;
   let userABetPda;
+  let userBBetPda;
+  let userCBetPda;
 
-  let authority;
-  let userA;
-  let userB;
-  let userC;
-
-  before("initialization", async () => {
+  before("Initialization", async () => {
 
     // Generowanie kluczy
     authority = Keypair.generate();
@@ -45,13 +118,14 @@ describe("testyy", () => {
     userB = Keypair.generate();
     userC = Keypair.generate();
 
+    // zasilanie kont użytkowinków
     const accounts = [authority, userA, userB, userC].map(user => ({
       address: user.publicKey,
       info: {
-        lamports: 9_000_000_000_000,      // każdy użytkownik dostaje np. 0.002 SOL
-        data: Buffer.alloc(0),    // puste konto
+        lamports: solToLamports(9), // każdy użytkownik dostaje 9 SOL
+        data: Buffer.alloc(0), // puste konto
         owner: SystemProgram.programId,
-        executable: false,
+        executable: false, // zaznaczenie że to konto nie jest programem
         rentEpoch: 0,
       } as AccountInfo<Buffer>
     }));
@@ -64,67 +138,108 @@ describe("testyy", () => {
       console.log("---------------------------");
     });
 
-
+    // inicjalizacja środowiska testowego
     context = await startAnchor("../betting", [], accounts);
     provider = new BankrunProvider(context);
-
     puppetProgram = new Program<Betting>(IDL, provider);
 
+    // inicjalizacja seedów dla adresów pochodnych programu
+    eventSeeds = [
+      Buffer.from("event_seed"),
+      new BN(eventId).toArrayLike(Buffer, "le", 8),
+    ];
 
+    vaultSeeds = [
+      Buffer.from("vault"),
+      new BN(eventId).toArrayLike(Buffer, "le", 8),
+    ];
 
-    console.log("Wallet key: ", provider.wallet.publicKey.toBase58());
-    console.log("authority publicKey: ", authority.publicKey.toBase58());
-    console.log("userA publicKey: ", userA.publicKey.toBase58());
-    console.log("userB publicKey: ", userB.publicKey.toBase58());
-    console.log("userC publicKey: ", userC.publicKey.toBase58());
-    const balance = await context.banksClient.getBalance(userA.publicKey);
-    console.log("UserA lamports:", balance);
-    console.log("UserA SOL:", Number(balance) / 1_000_000_000);
+    teamASeeds = [
+      Buffer.from("option_seed"),
+      new BN(eventId).toArrayLike(Buffer, "le", 8),
+      Buffer.from("Team A"),
+    ];
 
+    teamBSeeds = [
+      Buffer.from("option_seed"),
+      new BN(eventId).toArrayLike(Buffer, "le", 8),
+      Buffer.from("Team B"),
+    ];
 
+    userABetSeeds = [
+      Buffer.from("bet"),
+      userA.publicKey.toBytes(),
+      new BN(eventId).toArrayLike(Buffer, "le", 8),
+    ];
 
+    userBBetSeeds = [
+      Buffer.from("bet"),
+      userB.publicKey.toBytes(),
+      new BN(eventId).toArrayLike(Buffer, "le", 8),
+    ];
 
-    // PDA
+    userCBetSeeds = [
+      Buffer.from("bet"),
+      userC.publicKey.toBytes(),
+      new BN(eventId).toArrayLike(Buffer, "le", 8),
+    ];
+
+    // inicjalizacja adresów pochodnych programu (PDA)
     [eventPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("event_seed"), new BN(eventId).toArrayLike(Buffer, "le", 8)],
+      eventSeeds,
       puppetProgram.programId
     );
 
     [vaultPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), new BN(eventId).toArrayLike(Buffer, "le", 8)],
+      vaultSeeds,
       puppetProgram.programId
     );
 
     [teamAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("option_seed"), new BN(eventId).toArrayLike(Buffer, "le", 8), Buffer.from("Team A")],
+      teamASeeds,
       puppetProgram.programId
     );
 
     [teamBPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("option_seed"), new BN(eventId).toArrayLike(Buffer, "le", 8), Buffer.from("Team B")],
+      teamBSeeds,
       puppetProgram.programId
     );
 
-    // seeds = [b"bet".as_ref(), player.key().as_ref(), _event_id.to_le_bytes().as_ref()],
     [userABetPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("bet"), userA.publicKey.toBytes(), new BN(eventId).toArrayLike(Buffer, "le", 8)],
+      userABetSeeds,
       puppetProgram.programId
     );
 
-    // CLOCK
+    [userBBetPda] = PublicKey.findProgramAddressSync(
+      userBBetSeeds,
+      puppetProgram.programId
+    );
+
+    [userCBetPda] = PublicKey.findProgramAddressSync(
+      userCBetSeeds,
+      puppetProgram.programId
+    );
+
+    // inicjalizacja zegara
     client = context.banksClient;
     currentClock = await client.getClock();
-    context.setClock(
-      new Clock(
-        currentClock.slot,
-        currentClock.epochStartTimestamp,
-        currentClock.epoch,
-        currentClock.leaderScheduleEpoch,
-        BigInt(bettingStart), //tuż przed zakończeniem głosowania: 1700009999 , równo zakończenie możliwości głosowania: 1700010000
-      ),
-    );
-    currentClock = await client.getClock();
-    console.log("Aktualny czas: ", currentClock.unixTimestamp);
+
+    // Kontrolne wypisanie po inicjalizacji 
+    logClock(currentClock);
+
+    await printBalance(context, "authority", authority.publicKey);
+    await printBalance(context, "userA", userA.publicKey);
+    await printBalance(context, "userB", userB.publicKey);
+    await printBalance(context, "userC", userC.publicKey);
+
+    logPda("Event", eventPda, eventSeeds);
+    logPda("Vault", vaultPda, vaultSeeds);
+    logPda("Team A", teamAPda, teamASeeds);
+    logPda("Team B", teamBPda, teamBSeeds);
+    logPda("UserA Bet", userABetPda, userABetSeeds);
+    logPda("UserB Bet", userBBetPda, userBBetSeeds);
+    logPda("UserC Bet", userCBetPda, userCBetSeeds);
+
   });
 
   // ctx: Context<InitializeEvent>, _event_id: u64, start_time: u64, end_time: u64, event_name: String, event_description: String
@@ -134,8 +249,10 @@ describe("testyy", () => {
   // pub vault_account: AccountInfo<'info>,
   // pub system_program: Program<'info, System>,
   it("Initialize event", async () => {
-    currentClock = await client.getClock();
-    console.log("Aktualny czas: ", currentClock.unixTimestamp);
+    // ustawienie czasu, w którym tworzone jest wydarzenie i wypisanie go
+    currentClock = await setClock(context, bettingStart - 100);
+    logClock(currentClock);
+
     await puppetProgram.methods.initializeEvent(
       new BN(eventId),
       new BN(bettingStart),
@@ -187,23 +304,14 @@ describe("testyy", () => {
   // pub bet_account: Account<'info, BetAccount>,
   // pub system_program: Program<'info, System>,
   it("Place bet", async () => {
-    let balance = await context.banksClient.getBalance(userA.publicKey);
-    console.log("UserA lamports:", balance);
-    console.log("UserA SOL:", Number(balance) / 1_000_000_000);
-    context.setClock(
-      new Clock(
-        currentClock.slot,
-        currentClock.epochStartTimestamp,
-        currentClock.epoch,
-        currentClock.leaderScheduleEpoch,
-        BigInt(bettingStart + 50), //tuż przed zakończeniem głosowania: 1700009999 , równo zakończenie możliwości głosowania: 1700010000
-      ),
-    );
+    // ustawienie czasu na chwilę po rozpoczęciu możliwości obstawiania
     currentClock = await client.getClock();
-    console.log("Aktualny czas: ", currentClock.unixTimestamp);
+    setClock(context, bettingStart + 50);
+    logClock(currentClock);
 
-    const betAmount = new BN(anchor.web3.LAMPORTS_PER_SOL); // Użyj 1 SOL
+    const betAmount = new BN(solToLamports(0.25));
 
+    // Obstawianie
     const vote1Tx = await puppetProgram.methods.placeBet(
       new BN(eventId),
       nameTeamA,
@@ -216,10 +324,32 @@ describe("testyy", () => {
       betAccount: userABetPda,
       systemProgram: SystemProgram.programId,
     }).signers([userA]).rpc();
-    console.log("Your transaction signature", vote1Tx);
-    balance = await context.banksClient.getBalance(userA.publicKey);
-    console.log("UserA lamports:", balance);
-    console.log("UserA SOL:", Number(balance) / 1_000_000_000);
+
+    const vote2Tx = await puppetProgram.methods.placeBet(
+      new BN(eventId),
+      nameTeamA,
+      betAmount,
+    ).accounts({
+      player: userB.publicKey,
+      eventAccount: eventPda,
+      optionAccount: teamAPda,
+      vaultAccount: vaultPda,
+      betAccount: userBBetPda,
+      systemProgram: SystemProgram.programId,
+    }).signers([userB]).rpc();
+
+    const vote3Tx = await puppetProgram.methods.placeBet(
+      new BN(eventId),
+      nameTeamB,
+      betAmount,
+    ).accounts({
+      player: userC.publicKey,
+      eventAccount: eventPda,
+      optionAccount: teamBPda,
+      vaultAccount: vaultPda,
+      betAccount: userCBetPda,
+      systemProgram: SystemProgram.programId,
+    }).signers([userC]).rpc();
   });
 
   // ctx: Context<ResolveEvent>, _event_id: u64
@@ -269,6 +399,28 @@ describe("testyy", () => {
       optionAccount: teamAPda,
       systemProgram: SystemProgram.programId,
     }).signers([userA]).rpc();
+
+    await puppetProgram.methods.claimReward(
+      new BN(eventId),
+    ).accounts({
+      player: userB.publicKey,
+      vaultAccount: vaultPda,
+      betAccount: userBBetPda,
+      eventAccount: eventPda,
+      optionAccount: teamAPda,
+      systemProgram: SystemProgram.programId,
+    }).signers([userB]).rpc();
+
+    await puppetProgram.methods.claimReward(
+      new BN(eventId),
+    ).accounts({
+      player: userC.publicKey,
+      vaultAccount: vaultPda,
+      betAccount: userCBetPda,
+      eventAccount: eventPda,
+      optionAccount: teamBPda,
+      systemProgram: SystemProgram.programId,
+    }).signers([userC]).rpc();
   });
 });
 

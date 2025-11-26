@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{EventAccount, OptionAccount, ANCHOR_DISCRIMINATOR_SIZE};
+use crate::{error::ErrorCode,EventAccount, OptionAccount, ANCHOR_DISCRIMINATOR_SIZE};
 
 #[derive(Accounts)]
 #[instruction(_event_id: u64, option: String)]
@@ -30,6 +30,11 @@ pub struct InitializeOptions<'info> {
 pub fn handler(ctx: Context<InitializeOptions>, _event_id: u64, option: String) -> Result<()> {
     let option_account = &mut ctx.accounts.option_account;
     let event = &mut ctx.accounts.event_account;
+    let current_time = Clock::get()?.unix_timestamp;
+
+    if current_time > (event.betting_start as i64) {
+        return Err(ErrorCode::AddingOptionsAfterBettingStart.into());
+    }
 
     option_account.option_name = option;
     option_account.option_votes = 0;
