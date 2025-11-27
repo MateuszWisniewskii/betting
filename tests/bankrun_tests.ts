@@ -65,7 +65,7 @@ function solToLamports(solAmount: number) {
   return solAmount * anchor.web3.LAMPORTS_PER_SOL;
 }
 
-describe("Ogólny test działania kontraktu", () => {
+describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () => {
   // zmienne globalne dla testu
 
   // niezbędne zmienne do działania bankrun
@@ -85,6 +85,7 @@ describe("Ogólny test działania kontraktu", () => {
   let eventDescription = "Opis testowego wydarzenia";
   let nameTeamA = "Team A";
   let nameTeamB = "Team B";
+  let nameTeamC = "Team C";
 
   // konta użytkowników
   let authority; // admin bądź jednostka odpowiedzialna za tworzenie i zarządzanie wydarzeniem 
@@ -97,6 +98,7 @@ describe("Ogólny test działania kontraktu", () => {
   let vaultSeeds;
   let teamASeeds;
   let teamBSeeds;
+  let teamCSeeds;
   let userABetSeeds;
   let userBBetSeeds;
   let userCBetSeeds;
@@ -106,6 +108,7 @@ describe("Ogólny test działania kontraktu", () => {
   let vaultPda;
   let teamAPda;
   let teamBPda;
+  let teamCPda;
   let userABetPda;
   let userBBetPda;
   let userCBetPda;
@@ -166,6 +169,12 @@ describe("Ogólny test działania kontraktu", () => {
       Buffer.from("Team B"),
     ];
 
+    teamCSeeds = [
+      Buffer.from("option_seed"),
+      new BN(eventId).toArrayLike(Buffer, "le", 8),
+      Buffer.from("Team C"),
+    ];
+
     userABetSeeds = [
       Buffer.from("bet"),
       userA.publicKey.toBytes(),
@@ -205,6 +214,11 @@ describe("Ogólny test działania kontraktu", () => {
       puppetProgram.programId
     );
 
+    [teamCPda] = PublicKey.findProgramAddressSync(
+      teamCSeeds,
+      puppetProgram.programId
+    );
+
     [userABetPda] = PublicKey.findProgramAddressSync(
       userABetSeeds,
       puppetProgram.programId
@@ -236,19 +250,14 @@ describe("Ogólny test działania kontraktu", () => {
     logPda("Vault", vaultPda, vaultSeeds);
     logPda("Team A", teamAPda, teamASeeds);
     logPda("Team B", teamBPda, teamBSeeds);
+    logPda("Team C", teamCPda, teamCSeeds);
     logPda("UserA Bet", userABetPda, userABetSeeds);
     logPda("UserB Bet", userBBetPda, userBBetSeeds);
     logPda("UserC Bet", userCBetPda, userCBetSeeds);
 
   });
 
-  // ctx: Context<InitializeEvent>, _event_id: u64, start_time: u64, end_time: u64, event_name: String, event_description: String
-  //
-  // pub authority: Signer<'info>, // admin bądź inna jednostka autoryzująca wydarzenie
-  // pub event_account: Account<'info, EventAccount>,
-  // pub vault_account: AccountInfo<'info>,
-  // pub system_program: Program<'info, System>,
-  it("Initialize event", async () => {
+  it("Tworzenie wydarzenia", async () => {
     // ustawienie czasu, w którym tworzone jest wydarzenie i wypisanie go
     currentClock = await setClock(context, bettingStart - 100);
     logClock(currentClock);
@@ -267,13 +276,7 @@ describe("Ogólny test działania kontraktu", () => {
     }).signers([authority]).rpc();
   });
 
-  // ctx: Context<InitializeOptions>, _event_id: u64, option: String
-  //
-  // pub authority: Signer<'info>,
-  // pub option_account: Account<'info, OptionAccount>,
-  // pub event_account: Account<'info, EventAccount>,
-  // pub system_program: Program<'info, System>,
-  it("Initialize options", async () => {
+  it("Dodawanie drużyn do wydarzenia", async () => {
     await puppetProgram.methods.initializeOptions(
       new BN(eventId),
       nameTeamA,
@@ -295,15 +298,77 @@ describe("Ogólny test działania kontraktu", () => {
     }).signers([authority]).rpc();
   });
 
-  // ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u64
-  //
-  // pub player: Signer<'info>,
-  // pub event_account: Account<'info, EventAccount>,
-  // pub option_account: Account<'info, OptionAccount>,
-  // pub vault_account: AccountInfo<'info>,
-  // pub bet_account: Account<'info, BetAccount>,
-  // pub system_program: Program<'info, System>,
-  it("Place bet", async () => {
+
+  it("Obstawianie przed otwarciem głosowania", async () => {
+    currentClock = setClock(context, bettingStart - 50);
+    logClock(currentClock);
+
+    const betAmount = new BN(solToLamports(0.25));
+
+    try {
+      // Obstawianie
+      const vote0Tx = await puppetProgram.methods.placeBet(
+        new BN(eventId),
+        nameTeamA,
+        betAmount,
+      ).accounts({
+        player: userA.publicKey,
+        eventAccount: eventPda,
+        optionAccount: teamAPda,
+        vaultAccount: vaultPda,
+        betAccount: userABetPda,
+        systemProgram: SystemProgram.programId,
+      }).signers([userA]).rpc();
+
+      // Jeśli operacja się powiedzie, rzucamy błąd, żeby test upadł
+      throw new Error("Operacja NIE powinna się powieść przed rozpoczęciem obstawiania!");
+    } catch (error) {
+      // Weryfikujemy, czy to jest nasz oczekiwany błąd z programu Rust
+      const expectedErrorMessage = "BettingNotStarted"; // Nazwa błędu z Rust
+
+      if (error.error && error.error.errorCode && error.error.errorCode.code === expectedErrorMessage) {
+        console.log(`Test udany. Oczekiwany błąd przechwycony: ${expectedErrorMessage}`);
+      } else {
+        // Jeśli błąd jest inny niż oczekiwano, rzucamy go dalej, a test upada
+        console.log("Test nieudany. Przechwycono nieoczekiwany błąd:");
+        throw error;
+      }
+    }
+  });
+
+  it("Dodawanie dryżyn do wydarzenia po rozpoczęciu obstawiania (powinno się NIE udać)", async () => {
+    // ustawienie czasu po rozpoczęciu zakładów
+    currentClock = await setClock(context, bettingStart + 10);
+    logClock(currentClock);
+
+    try {
+      await puppetProgram.methods.initializeOptions(
+        new BN(eventId),
+        nameTeamC,
+      ).accounts({
+        authority: authority.publicKey,
+        optionAccount: teamCPda,
+        eventAccount: eventPda,
+        systemProgram: SystemProgram.programId,
+      }).signers([authority]).rpc();
+
+      // Jeśli operacja się powiedzie, rzucamy błąd, żeby test upadł
+      throw new Error("Operacja NIE powinna się powieść po rozpoczęciu obstawiania!");
+    } catch (error) {
+      // Weryfikujemy, czy to jest nasz oczekiwany błąd z programu Rust
+      const expectedErrorMessage = "AddingOptionsAfterBettingStart"; // Nazwa błędu z Rust
+
+      if (error.error && error.error.errorCode && error.error.errorCode.code === expectedErrorMessage) {
+        console.log(`Test udany. Oczekiwany błąd przechwycony: ${expectedErrorMessage}`);
+      } else {
+        // Jeśli błąd jest inny niż oczekiwano, rzucamy go dalej, a test upada
+        console.log("Test nieudany. Przechwycono nieoczekiwany błąd:");
+        throw error;
+      }
+    }
+  });
+
+  it("Standardowe obstawianie", async () => {
     // ustawienie czasu na chwilę po rozpoczęciu możliwości obstawiania
     currentClock = await client.getClock();
     setClock(context, bettingStart + 50);
@@ -352,12 +417,7 @@ describe("Ogólny test działania kontraktu", () => {
     }).signers([userC]).rpc();
   });
 
-  // ctx: Context<ResolveEvent>, _event_id: u64
-  //
-  // pub authority: Signer<'info>,
-  // pub event_account: Account<'info, EventAccount>,
-  // pub system_program: Program<'info, System>,
-  it("Resolve event", async () => {
+  it("Kończenie wydarzenia", async () => {
     context.setClock(
       new Clock(
         currentClock.slot,
@@ -380,15 +440,7 @@ describe("Ogólny test działania kontraktu", () => {
     }).signers([authority]).rpc();
   });
 
-  // ctx: Context<ClaimReward>, _event_id: u64
-  //
-  // pub player: Signer<'info>,
-  // pub vault_account: AccountInfo<'info>,
-  // pub bet_account: Account<'info, BetAccount>,
-  // pub event_account: Account<'info, EventAccount>,
-  // pub option_account: Account<'info, OptionAccount>,
-  // pub system_program: Program<'info, System>,
-  it("Claim reward", async () => {
+  it("Odbieranie nagród", async () => {
     await puppetProgram.methods.claimReward(
       new BN(eventId),
     ).accounts({
