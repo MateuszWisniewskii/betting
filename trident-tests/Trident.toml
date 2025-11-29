@@ -1,0 +1,8 @@
+[fuzz.metrics]
+enabled = true
+
+
+[[fuzz.programs]]
+address = "EuDe8zmbZeYuaADaJjp8F9zCHm9L7LuAvrsvqLdSCXN4"
+program = "../target/deploy/betting.so"
+ 
