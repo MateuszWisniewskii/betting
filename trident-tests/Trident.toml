@@ -1,5 +1,7 @@
 [fuzz.metrics]
 enabled = true
+dashboard = true
+json = true
 
 
 [[fuzz.programs]]

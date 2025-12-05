@@ -91,8 +91,7 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
     let total_pool = event.total_pool;
     let payout = (bet.amount as u128)
         .checked_mul(total_pool as u128)
-        .unwrap()
-        / (total_winner_pool as u128);
+        .unwrap().checked_div(total_winner_pool as u128);
 
     // let transfer_context = CpiContext::new(
     //     system_program.to_account_info(),

@@ -89,9 +89,9 @@ pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u
     bet.reward_claimed = false;
     bet.bet_placed = true;
 
-    option_account.option_votes += 1;
-    option_account.option_pool += amount;
-    event_account.total_pool += amount;
+    option_account.option_votes.checked_add(1);
+    option_account.option_pool.checked_add(amount);
+    event_account.total_pool.checked_add(amount);
 
     msg!("Nazwa drużyny: {}", option_account.option_name);
     msg!("Ilość oddanych zakładów: {}", option_account.option_votes);
