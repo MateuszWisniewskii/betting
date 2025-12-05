@@ -1,0 +1,25 @@
+name: Quick Install workflow
+
+on:
+  push:
+    branches: ["main", "betting_manager"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Quick install Solana + Anchor
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash
+
+      - name: Build Anchor program
+        run: anchor build
+
+      - name: Run Anchor tests
+        run: anchor test
