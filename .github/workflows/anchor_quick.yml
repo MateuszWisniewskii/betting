@@ -17,7 +17,15 @@ jobs:
       - name: Quick install Solana + Anchor
         run: |
           curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
+      - name: Install AVM (Anchor Version Manager) and set Anchor 0.31.0
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --force
+          avm install 0.31.0
+          avm use 0.31.0
+          anchor --version
+          
       - name: Build Anchor program
         run: anchor build
 
