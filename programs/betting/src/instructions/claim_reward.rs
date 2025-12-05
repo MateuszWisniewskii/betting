@@ -125,42 +125,40 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
     transfer(transfer_context, payout as u64)?;
     bet.reward_claimed = true;
 
-    msg!("Nazwa drużyny: {}", option.option_name);
-    msg!("Ilość oddanych zakładów: {}", option.option_votes);
-    msg!(
-        "Łączna wartość zakładów na daną drużynę: {}",
-        option.option_pool
-    );
-
-    msg!("Nazwa wydarzenia: {}", event.event_name);
-    msg!("Opis wydarzenia: {}", event.event_description);
-    msg!(
-        "Termin rozpoczęcia przyjmowania zakładów: {}",
-        event.betting_start
-    );
-    msg!(
-        "Termin zakończenia przyjmowania zakładów: {}",
-        event.betting_start
-    );
-    msg!(
-        "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
-        event.betting_options_index
-    );
-    msg!(
-        "Czy wydarzenie zostało zakończone?: {}",
-        event.event_resolved
-    );
-    msg!(
-        "Nazwa zwycięskiej drużyny: {}",
-        event.winning_option
-    );
-    msg!("Całkowita pula: {}", event.total_pool);
-
-    msg!("Osoba obstawiająca: {}", bet.player);
-    msg!("ID wydarzenia: {}", bet.event_id);
-    msg!("Nazwa drużyny: {}", bet.option);
-    msg!("Obstawiona kwota: {}", bet.amount);
-    msg!("Czy nagroda została odebrana: {}", bet.reward_claimed);
+    // msg!("Nazwa drużyny: {}", option.option_name);
+    // msg!("Ilość oddanych zakładów: {}", option.option_votes);
+    // msg!(
+    //     "Łączna wartość zakładów na daną drużynę: {}",
+    //     option.option_pool
+    // );
+    // msg!("Nazwa wydarzenia: {}", event.event_name);
+    // msg!("Opis wydarzenia: {}", event.event_description);
+    // msg!(
+    //     "Termin rozpoczęcia przyjmowania zakładów: {}",
+    //     event.betting_start
+    // );
+    // msg!(
+    //     "Termin zakończenia przyjmowania zakładów: {}",
+    //     event.betting_start
+    // );
+    // msg!(
+    //     "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
+    //     event.betting_options_index
+    // );
+    // msg!(
+    //     "Czy wydarzenie zostało zakończone?: {}",
+    //     event.event_resolved
+    // );
+    // msg!(
+    //     "Nazwa zwycięskiej drużyny: {}",
+    //     event.winning_option
+    // );
+    // msg!("Całkowita pula: {}", event.total_pool);
+    // msg!("Osoba obstawiająca: {}", bet.player);
+    // msg!("ID wydarzenia: {}", bet.event_id);
+    // msg!("Nazwa drużyny: {}", bet.option);
+    // msg!("Obstawiona kwota: {}", bet.amount);
+    // msg!("Czy nagroda została odebrana: {}", bet.reward_claimed);
 
     Ok(())
 }
