@@ -51,7 +51,7 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
     let bet = &mut ctx.accounts.bet_account;
     let vault = &mut ctx.accounts.vault_account;
     let event = &mut ctx.accounts.event_account;
-    let option = &mut &ctx.accounts.option_account;
+    let option = &mut ctx.accounts.option_account;
     let system_program = &ctx.accounts.system_program;
     let current_time = Clock::get()?.unix_timestamp;
 
@@ -87,13 +87,21 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
     // stąd jego nagroda wynosi 0,9 * 150 = 135
     // po dodaniu dwóch wygranych 135 + 15 = 150, widać że cała pula została proporcjonalnie podzielona między graczy, którzy obstawili zwycięską drużynę
 
+    if option.option_pool == 0 {
+    msg!("Nie było żadnych zakładów na zwycięską opcję, nagroda wynosi 0");
+    bet.reward_claimed = true;
+    return Ok(());
+}
+
     let total_winner_pool = option.option_pool;
     let total_pool = event.total_pool;
-    let payout = (bet.amount as u128)
-        .checked_mul(total_pool as u128)
-        .unwrap()
-        / (total_winner_pool as u128);
+    let mut payout = (bet.amount)
+    .checked_mul(total_pool)
+    .unwrap()
+    .checked_div(total_winner_pool)
+    .unwrap() as u64;
 
+    payout = payout.checked_div(100).ok_or(ErrorCode::Overflow)?;
     // let transfer_context = CpiContext::new(
     //     system_program.to_account_info(),
     //     Transfer {
@@ -125,40 +133,41 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
     transfer(transfer_context, payout as u64)?;
     bet.reward_claimed = true;
 
-    // msg!("Nazwa drużyny: {}", option.option_name);
-    // msg!("Ilość oddanych zakładów: {}", option.option_votes);
-    // msg!(
-    //     "Łączna wartość zakładów na daną drużynę: {}",
-    //     option.option_pool
-    // );
-    // msg!("Nazwa wydarzenia: {}", event.event_name);
-    // msg!("Opis wydarzenia: {}", event.event_description);
-    // msg!(
-    //     "Termin rozpoczęcia przyjmowania zakładów: {}",
-    //     event.betting_start
-    // );
-    // msg!(
-    //     "Termin zakończenia przyjmowania zakładów: {}",
-    //     event.betting_start
-    // );
-    // msg!(
-    //     "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
-    //     event.betting_options_index
-    // );
-    // msg!(
-    //     "Czy wydarzenie zostało zakończone?: {}",
-    //     event.event_resolved
-    // );
-    // msg!(
-    //     "Nazwa zwycięskiej drużyny: {}",
-    //     event.winning_option
-    // );
-    // msg!("Całkowita pula: {}", event.total_pool);
-    // msg!("Osoba obstawiająca: {}", bet.player);
-    // msg!("ID wydarzenia: {}", bet.event_id);
-    // msg!("Nazwa drużyny: {}", bet.option);
-    // msg!("Obstawiona kwota: {}", bet.amount);
-    // msg!("Czy nagroda została odebrana: {}", bet.reward_claimed);
+    msg!("Nazwa drużyny: {}", option.option_name);
+    msg!("Ilość oddanych zakładów: {}", option.option_votes);
+    msg!(
+        "Łączna wartość zakładów na daną drużynę: {}",
+        option.option_pool
+    );
+    msg!("Nazwa wydarzenia: {}", event.event_name);
+    msg!("Opis wydarzenia: {}", event.event_description);
+    msg!(
+        "Termin rozpoczęcia przyjmowania zakładów: {}",
+        event.betting_start
+    );
+    msg!(
+        "Termin zakończenia przyjmowania zakładów: {}",
+        event.betting_start
+    );
+    msg!(
+        "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
+        event.betting_options_index
+    );
+    msg!(
+        "Czy wydarzenie zostało zakończone?: {}",
+        event.event_resolved
+    );
+    msg!(
+        "Nazwa zwycięskiej drużyny: {}",
+        event.winning_option
+    );
+    msg!("Całkowita pula: {}", event.total_pool);
+    msg!("Osoba obstawiająca: {}", bet.player);
+    msg!("ID wydarzenia: {}", bet.event_id);
+    msg!("Nazwa drużyny: {}", bet.option);
+    msg!("Obstawiona kwota: {}", bet.amount);
+    msg!("Czy nagroda została odebrana: {}", bet.reward_claimed);
+    msg!("Wygrana: {}", payout);
 
     Ok(())
 }

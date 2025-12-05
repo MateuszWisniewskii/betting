@@ -51,27 +51,27 @@ pub fn handler(
     event.winning_option = "Jeszcze nie ma zwycięzcy".to_string();
     event.total_pool = 0;
 
-    // msg!("Zostało utworzone wydarzenie");
-    // msg!("Nazwa wydarzenia: {}", event.event_name);
-    // msg!("Opis wydarzenia: {}", event.event_description);
-    // msg!(
-    //     "Termin rozpoczęcia przyjmowania zakładów: {}",
-    //     event.betting_start
-    // );
-    // msg!(
-    //     "Termin zakończenia przyjmowania zakładów: {}",
-    //     event.betting_end
-    // );
-    // msg!(
-    //     "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
-    //     event.betting_options_index
-    // );
-    // msg!(
-    //     "Czy wydarzenie zostało zakończone?: {}",
-    //     event.event_resolved
-    // );
-    // msg!("Nazwa zwycięskiej drużyny: {}", event.winning_option);
-    // msg!("Całkowita pula: {}", event.total_pool);
+    msg!("Zostało utworzone wydarzenie");
+    msg!("Nazwa wydarzenia: {}", event.event_name);
+    msg!("Opis wydarzenia: {}", event.event_description);
+    msg!(
+        "Termin rozpoczęcia przyjmowania zakładów: {}",
+        event.betting_start
+    );
+    msg!(
+        "Termin zakończenia przyjmowania zakładów: {}",
+        event.betting_end
+    );
+    msg!(
+        "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
+        event.betting_options_index
+    );
+    msg!(
+        "Czy wydarzenie zostało zakończone?: {}",
+        event.event_resolved
+    );
+    msg!("Nazwa zwycięskiej drużyny: {}", event.winning_option);
+    msg!("Całkowita pula: {}", event.total_pool);
 
     Ok(())
 }

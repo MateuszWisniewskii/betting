@@ -375,12 +375,13 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
     logClock(currentClock);
 
     const betAmount = new BN(solToLamports(0.25));
+    const twiceOfBetAmount = new BN(solToLamports(0.5));
 
     // Obstawianie
     const vote1Tx = await puppetProgram.methods.placeBet(
       new BN(eventId),
       nameTeamA,
-      betAmount,
+      twiceOfBetAmount,
     ).accounts({
       player: userA.publicKey,
       eventAccount: eventPda,

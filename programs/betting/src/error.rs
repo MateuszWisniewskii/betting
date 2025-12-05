@@ -17,5 +17,7 @@ pub enum ErrorCode {
     #[msg("Obstawiana kwota nie może być ujemna, ani zerowa")]
     InvalidBetAmount,
     #[msg("Zakład został już złożony, nie można głosować drugi raz")]
-    BetAlreadyPlaced
+    BetAlreadyPlaced,
+    #[msg("zmienna przepełniła się. Overflow occured")]
+    Overflow
 }

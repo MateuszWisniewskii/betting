@@ -39,7 +39,7 @@ pub fn handler(ctx: Context<InitializeOptions>, _event_id: u64, option: String) 
     option_account.option_name = option;
     option_account.option_votes = 0;
     option_account.option_pool = 0;
-    event.betting_options_index += 1;
+    event.betting_options_index = event.betting_options_index.checked_add(1).ok_or(ErrorCode::Overflow)?;
 
     msg!("Nazwa drużyny: {}", option_account.option_name);
     msg!("Ilość oddanych zakładów: {}", option_account.option_votes);
@@ -48,25 +48,25 @@ pub fn handler(ctx: Context<InitializeOptions>, _event_id: u64, option: String) 
         option_account.option_pool
     );
 
-    // msg!("Nazwa wydarzenia: {}", event.event_name);
-    // msg!("Opis wydarzenia: {}", event.event_description);
-    // msg!(
-    //     "Termin rozpoczęcia przyjmowania zakładów: {}",
-    //     event.betting_start
-    // );
-    // msg!(
-    //     "Termin zakończenia przyjmowania zakładów: {}",
-    //     event.betting_end
-    // );
-    // msg!(
-    //     "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
-    //     event.betting_options_index
-    // );
-    // msg!(
-    //     "Czy wydarzenie zostało zakończone?: {}",
-    //     event.event_resolved
-    // );
-    // msg!("Nazwa zwycięskiej drużyny: {}", event.winning_option);
-    // msg!("Całkowita pula: {}", event.total_pool);
+    msg!("Nazwa wydarzenia: {}", event.event_name);
+    msg!("Opis wydarzenia: {}", event.event_description);
+    msg!(
+        "Termin rozpoczęcia przyjmowania zakładów: {}",
+        event.betting_start
+    );
+    msg!(
+        "Termin zakończenia przyjmowania zakładów: {}",
+        event.betting_end
+    );
+    msg!(
+        "Aktualna liczba drużyn birących udział w wydarzeniu: {}",
+        event.betting_options_index
+    );
+    msg!(
+        "Czy wydarzenie zostało zakończone?: {}",
+        event.event_resolved
+    );
+    msg!("Nazwa zwycięskiej drużyny: {}", event.winning_option);
+    msg!("Całkowita pula: {}", event.total_pool);
     Ok(())
 }
