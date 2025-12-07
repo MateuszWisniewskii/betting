@@ -3,6 +3,9 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
+use anchor_lang::solana_program::program::invoke_signed;
+use anchor_lang::solana_program::system_instruction;
+
 use crate::{error::ErrorCode, BetAccount, EventAccount, OptionAccount};
 
 #[derive(Accounts)]
@@ -10,6 +13,14 @@ use crate::{error::ErrorCode, BetAccount, EventAccount, OptionAccount};
 pub struct ClaimReward<'info> {
     #[account(mut)]
     pub player: Signer<'info>,
+
+    /// CHECK: Konto admina/autoryzacji, które otrzyma resztę.
+    /// Nie musi być Signerem. Używamy has_one dla weryfikacji.
+    #[account(
+        mut,
+        constraint = authority.key() == event_account.authority
+    )]
+    pub authority: AccountInfo<'info>,
 
     /// CHECK: There is no data. Konto do trzymania waluty.
     #[account(
@@ -51,7 +62,7 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
     let bet = &mut ctx.accounts.bet_account;
     let vault = &mut ctx.accounts.vault_account;
     let event = &mut ctx.accounts.event_account;
-    let option = &mut &ctx.accounts.option_account;
+    let option = &mut ctx.accounts.option_account;
     let system_program = &ctx.accounts.system_program;
     let current_time = Clock::get()?.unix_timestamp;
 
@@ -89,29 +100,16 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
 
     let total_winner_pool = option.option_pool;
     let total_pool = event.total_pool;
-    let payout = (bet.amount as u128)
-        .checked_mul(total_pool as u128)
+    let mut payout = (bet.amount)
+        .checked_mul(total_pool)
         .unwrap()
-        / (total_winner_pool as u128);
-
-    // let transfer_context = CpiContext::new(
-    //     system_program.to_account_info(),
-    //     Transfer {
-    //         from: vault.to_account_info(),
-    //         to: player.to_account_info(),
-    //     },
-    // );
-
-    // transfer(transfer_context, payout as u64)?;
+        .checked_div(total_winner_pool)
+        .unwrap() as u64;
 
     let bump = ctx.bumps.vault_account;
 
     let event_id_bytes = _event_id.to_le_bytes();
-    let vault_seeds = &[
-        b"vault".as_ref(),
-        event_id_bytes.as_ref(),
-        &[bump],
-    ];
+    let vault_seeds = &[b"vault".as_ref(), event_id_bytes.as_ref(), &[bump]];
     let signer_seeds = &[&vault_seeds[..]];
 
     let transfer_context = CpiContext::new_with_signer(
@@ -122,8 +120,40 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
         },
         signer_seeds,
     );
+
+
+    msg!("Stan skarbca: {}", vault.to_account_info().lamports());
     transfer(transfer_context, payout as u64)?;
     bet.reward_claimed = true;
+
+    option.option_votes = option.option_votes.checked_sub(1).ok_or(ErrorCode::Overflow)?;
+
+    if  option.option_votes == 0 {
+        msg!("Ostatni odbiór! Zamykanie skarbca i transfer pozostałego salda: {} lamportów.", vault.to_account_info().lamports());
+
+        let vault_info = vault.to_account_info();
+        let authority_info = ctx.accounts.authority.to_account_info();
+        let system_program_info = ctx.accounts.system_program.to_account_info();
+
+        // Stwórz instrukcję do transferu CAŁEGO pozostałego salda (w tym Rent Exempt)
+        let ix = system_instruction::transfer(
+            vault_info.key,
+            authority_info.key,
+            vault.to_account_info().lamports(),
+        );
+
+        // Wywołaj transfer z użyciem system_program, jako podpisany przez PDA
+        invoke_signed(
+            &ix,
+            &[
+                vault_info.clone(),
+                authority_info.clone(),
+                system_program_info.clone(),
+            ],
+            signer_seeds,
+        )?;
+    }
+    
 
     msg!("Nazwa drużyny: {}", option.option_name);
     msg!("Ilość oddanych zakładów: {}", option.option_votes);
@@ -131,7 +161,6 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
         "Łączna wartość zakładów na daną drużynę: {}",
         option.option_pool
     );
-
     msg!("Nazwa wydarzenia: {}", event.event_name);
     msg!("Opis wydarzenia: {}", event.event_description);
     msg!(
@@ -150,17 +179,15 @@ pub fn handler(ctx: Context<ClaimReward>, _event_id: u64) -> Result<()> {
         "Czy wydarzenie zostało zakończone?: {}",
         event.event_resolved
     );
-    msg!(
-        "Nazwa zwycięskiej drużyny: {}",
-        event.winning_option
-    );
+    msg!("Nazwa zwycięskiej drużyny: {}", event.winning_option);
     msg!("Całkowita pula: {}", event.total_pool);
-
     msg!("Osoba obstawiająca: {}", bet.player);
     msg!("ID wydarzenia: {}", bet.event_id);
     msg!("Nazwa drużyny: {}", bet.option);
     msg!("Obstawiona kwota: {}", bet.amount);
     msg!("Czy nagroda została odebrana: {}", bet.reward_claimed);
+    msg!("Wygrana: {}", payout);
+    msg!("Stan skarbca: {}", vault.to_account_info().lamports());
 
     Ok(())
 }

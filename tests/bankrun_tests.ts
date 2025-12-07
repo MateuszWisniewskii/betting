@@ -65,7 +65,7 @@ function solToLamports(solAmount: number) {
   return solAmount * anchor.web3.LAMPORTS_PER_SOL;
 }
 
-describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () => {
+describe("Testy", () => {
   // zmienne globalne dla testu
 
   // niezbędne zmienne do działania bankrun
@@ -298,7 +298,6 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
     }).signers([authority]).rpc();
   });
 
-
   it("Obstawianie przed otwarciem głosowania", async () => {
     currentClock = setClock(context, bettingStart - 50);
     logClock(currentClock);
@@ -375,12 +374,13 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
     logClock(currentClock);
 
     const betAmount = new BN(solToLamports(0.25));
+    const twiceOfBetAmount = new BN(solToLamports(0.5));
 
     // Obstawianie
     const vote1Tx = await puppetProgram.methods.placeBet(
       new BN(eventId),
       nameTeamA,
-      betAmount,
+      twiceOfBetAmount,
     ).accounts({
       player: userA.publicKey,
       eventAccount: eventPda,
@@ -436,15 +436,18 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
     ).accounts({
       authority: authority.publicKey,
       eventAccount: eventPda,
+      vaultAccount: vaultPda,
       systemProgram: SystemProgram.programId,
     }).signers([authority]).rpc();
   });
 
   it("Odbieranie nagród", async () => {
+    printBalance(context, "authority", authority.publicKey);
     await puppetProgram.methods.claimReward(
       new BN(eventId),
     ).accounts({
       player: userA.publicKey,
+      authority: authority.publicKey,
       vaultAccount: vaultPda,
       betAccount: userABetPda,
       eventAccount: eventPda,
@@ -455,24 +458,27 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
     await puppetProgram.methods.claimReward(
       new BN(eventId),
     ).accounts({
-      player: userB.publicKey,
-      vaultAccount: vaultPda,
-      betAccount: userBBetPda,
-      eventAccount: eventPda,
-      optionAccount: teamAPda,
-      systemProgram: SystemProgram.programId,
-    }).signers([userB]).rpc();
-
-    await puppetProgram.methods.claimReward(
-      new BN(eventId),
-    ).accounts({
       player: userC.publicKey,
+      authority: authority.publicKey,
       vaultAccount: vaultPda,
       betAccount: userCBetPda,
       eventAccount: eventPda,
       optionAccount: teamBPda,
       systemProgram: SystemProgram.programId,
     }).signers([userC]).rpc();
+
+    await puppetProgram.methods.claimReward(
+      new BN(eventId),
+    ).accounts({
+      player: userB.publicKey,
+      authority: authority.publicKey,
+      vaultAccount: vaultPda,
+      betAccount: userBBetPda,
+      eventAccount: eventPda,
+      optionAccount: teamAPda,
+      systemProgram: SystemProgram.programId,
+    }).signers([userB]).rpc();
+    printBalance(context, "authority", authority.publicKey);
   });
 });
 

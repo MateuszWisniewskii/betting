@@ -15,4 +15,5 @@ pub struct EventAccount {
     #[max_len(20)]
     pub winning_option: String, // nazwa zwycięskiej drużyny
     pub total_pool: u64,
+    pub winning_votes_counter: u64,
 }
