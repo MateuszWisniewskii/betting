@@ -298,7 +298,6 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
     }).signers([authority]).rpc();
   });
 
-
   it("Obstawianie przed otwarciem głosowania", async () => {
     currentClock = setClock(context, bettingStart - 50);
     logClock(currentClock);
@@ -442,10 +441,12 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
   });
 
   it("Odbieranie nagród", async () => {
+    printBalance(context, "authority", authority.publicKey);
     await puppetProgram.methods.claimReward(
       new BN(eventId),
     ).accounts({
       player: userA.publicKey,
+      authority: authority.publicKey,
       vaultAccount: vaultPda,
       betAccount: userABetPda,
       eventAccount: eventPda,
@@ -456,24 +457,27 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
     await puppetProgram.methods.claimReward(
       new BN(eventId),
     ).accounts({
-      player: userB.publicKey,
-      vaultAccount: vaultPda,
-      betAccount: userBBetPda,
-      eventAccount: eventPda,
-      optionAccount: teamAPda,
-      systemProgram: SystemProgram.programId,
-    }).signers([userB]).rpc();
-
-    await puppetProgram.methods.claimReward(
-      new BN(eventId),
-    ).accounts({
       player: userC.publicKey,
+      authority: authority.publicKey,
       vaultAccount: vaultPda,
       betAccount: userCBetPda,
       eventAccount: eventPda,
       optionAccount: teamBPda,
       systemProgram: SystemProgram.programId,
     }).signers([userC]).rpc();
+
+    await puppetProgram.methods.claimReward(
+      new BN(eventId),
+    ).accounts({
+      player: userB.publicKey,
+      authority: authority.publicKey,
+      vaultAccount: vaultPda,
+      betAccount: userBBetPda,
+      eventAccount: eventPda,
+      optionAccount: teamAPda,
+      systemProgram: SystemProgram.programId,
+    }).signers([userB]).rpc();
+    printBalance(context, "authority", authority.publicKey);
   });
 });
 

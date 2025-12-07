@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
 
-use crate::EventAccount;
+use crate::{EventAccount, OptionAccount};
 
 use crate::error::ErrorCode;
 
 #[derive(Accounts)]
-#[instruction(_event_id: u64)]
+#[instruction(_event_id: u64, winning_option: String)]
 pub struct ResolveEvent<'info> {
     #[account()]
     pub authority: Signer<'info>,
@@ -18,12 +18,20 @@ pub struct ResolveEvent<'info> {
     )]
     pub event_account: Account<'info, EventAccount>,
 
+    #[account(
+        mut,
+        seeds = [b"option_seed".as_ref(), _event_id.to_le_bytes().as_ref(), winning_option.as_ref()],
+        bump
+    )]
+    pub option_account: Account<'info, OptionAccount>,
+
     #[account()]
     pub system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<ResolveEvent>, _event_id: u64, winning_option: String) -> Result<()> {
     let current_time = Clock::get()?.unix_timestamp;
+    let winning_option_account = &ctx.accounts.option_account;
     let event = &mut ctx.accounts.event_account;
 
     if current_time < (event.betting_end as i64) {
@@ -31,6 +39,7 @@ pub fn handler(ctx: Context<ResolveEvent>, _event_id: u64, winning_option: Strin
     }
 
     event.winning_option = winning_option;
+    event.winning_votes_counter = winning_option_account.option_votes;
     event.event_resolved = true;
 
     msg!("Nazwa wydarzenia: {}", event.event_name);
