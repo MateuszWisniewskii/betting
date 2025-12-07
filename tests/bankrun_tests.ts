@@ -65,7 +65,7 @@ function solToLamports(solAmount: number) {
   return solAmount * anchor.web3.LAMPORTS_PER_SOL;
 }
 
-describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () => {
+describe("Testy", () => {
   // zmienne globalne dla testu
 
   // niezbędne zmienne do działania bankrun
@@ -436,6 +436,7 @@ describe("Test sprawdzający dodawanie opcji po rozpoczęciu obstawiania", () =>
     ).accounts({
       authority: authority.publicKey,
       eventAccount: eventPda,
+      vaultAccount: vaultPda,
       systemProgram: SystemProgram.programId,
     }).signers([authority]).rpc();
   });
