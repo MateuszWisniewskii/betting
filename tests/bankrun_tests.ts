@@ -418,6 +418,8 @@ describe("Testy", () => {
   });
 
   it("Kończenie wydarzenia", async () => {
+    printBalance(context, "authority", authority.publicKey);
+    printBalance(context, "Skarbiec", vaultPda);
     context.setClock(
       new Clock(
         currentClock.slot,
@@ -439,6 +441,8 @@ describe("Testy", () => {
       vaultAccount: vaultPda,
       systemProgram: SystemProgram.programId,
     }).signers([authority]).rpc();
+    printBalance(context, "authority", authority.publicKey);
+    printBalance(context, "Skarbiec", vaultPda);
   });
 
   it("Odbieranie nagród", async () => {

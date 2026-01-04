@@ -3,7 +3,7 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
-use crate::{EventAccount, OptionAccount};
+use crate::{EVENT_SEED, EventAccount, OPTION_SEED, OptionAccount, VAULT_SEED};
 
 use crate::error::ErrorCode;
 
@@ -16,7 +16,7 @@ pub struct ResolveEvent<'info> {
     #[account(
         mut,
         has_one = authority,
-        seeds = [b"event_seed".as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [EVENT_SEED.as_bytes(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub event_account: Account<'info, EventAccount>,
@@ -24,14 +24,14 @@ pub struct ResolveEvent<'info> {
     /// CHECK: There is no data. Konto do trzymania waluty.
     #[account(
         mut,
-        seeds = [b"vault".as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [VAULT_SEED.as_bytes(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub vault_account: AccountInfo<'info>,
 
     #[account(
         mut,
-        seeds = [b"option_seed".as_ref(), _event_id.to_le_bytes().as_ref(), winning_option.as_ref()],
+        seeds = [OPTION_SEED.as_bytes(), _event_id.to_le_bytes().as_ref(), winning_option.as_ref()],
         bump
     )]
     pub option_account: Account<'info, OptionAccount>,

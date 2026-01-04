@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
 
-use crate::{BetAccount, EventAccount, OptionAccount, ANCHOR_DISCRIMINATOR_SIZE};
+use crate::{ANCHOR_DISCRIMINATOR_SIZE, BET_SEED, BetAccount, EVENT_SEED, EventAccount, OPTION_SEED, OptionAccount, VAULT_SEED};
 
 use crate::error::ErrorCode;
 
@@ -13,14 +13,14 @@ pub struct PlaceBet<'info> {
 
     #[account(
         mut,
-        seeds = [b"event_seed".as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [EVENT_SEED.as_bytes(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub event_account: Account<'info, EventAccount>,
 
     #[account(
         mut,
-        seeds = [b"option_seed".as_ref(), _event_id.to_le_bytes().as_ref(), option.as_ref()],
+        seeds = [OPTION_SEED.as_bytes(), _event_id.to_le_bytes().as_ref(), option.as_ref()],
         bump
     )]
     pub option_account: Account<'info, OptionAccount>,
@@ -28,7 +28,7 @@ pub struct PlaceBet<'info> {
     /// CHECK: There is no data. Konto do trzymania waluty.
     #[account(
         mut,
-        seeds = [b"vault".as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [VAULT_SEED.as_bytes(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub vault_account: AccountInfo<'info>,
@@ -37,7 +37,7 @@ pub struct PlaceBet<'info> {
         init_if_needed,
         payer = player,
         space = ANCHOR_DISCRIMINATOR_SIZE + BetAccount::INIT_SPACE,
-        seeds = [b"bet".as_ref(), player.key().as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [BET_SEED.as_bytes(), player.key().as_ref(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub bet_account: Account<'info, BetAccount>,

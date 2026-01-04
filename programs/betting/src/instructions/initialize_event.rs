@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{EventAccount, ANCHOR_DISCRIMINATOR_SIZE};
+use crate::{ANCHOR_DISCRIMINATOR_SIZE, EVENT_SEED, EventAccount, VAULT_SEED};
 
 #[derive(Accounts)]
 #[instruction(_event_id: u64)]
@@ -12,7 +12,7 @@ pub struct InitializeEvent<'info> {
         init,
         payer = authority,
         space = ANCHOR_DISCRIMINATOR_SIZE + EventAccount::INIT_SPACE,
-        seeds = [b"event_seed".as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [EVENT_SEED.as_bytes(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub event_account: Account<'info, EventAccount>,
@@ -20,7 +20,7 @@ pub struct InitializeEvent<'info> {
     /// CHECK: There is no data. Konto do trzymania waluty.
     #[account(
         mut,
-        seeds = [b"vault".as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [VAULT_SEED.as_bytes(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub vault_account: AccountInfo<'info>,
