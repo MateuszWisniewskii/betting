@@ -367,6 +367,62 @@ describe("Testy", () => {
     }
   });
 
+  it("Próba obstawienia na nieistniejącą drużynę (powinno się NIE udać)", async () => {
+    // 1. Przygotowanie fałszywych danych
+    const fakeTeamName = "NieistniejacaDruzyna";
+    const betAmount = new BN(solToLamports(0.1));
+
+    // 2. Musimy wyliczyć adres (PDA) dla tej fałszywej drużyny.
+    // Zakładam, że Twoje seedy to np. ["option", eventId, name].
+    // Dostosuj ten fragment do swoich seedów w Rucie, jeśli są inne.
+    const [fakeTeamPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("option"), // lub inny prefix, którego używasz w Rucie
+        new BN(eventId).toArrayLike(Buffer, "le", 8),
+        Buffer.from(fakeTeamName)
+      ],
+      puppetProgram.programId
+    );
+
+    try {
+      // 3. Próba obstawienia
+      await puppetProgram.methods.placeBet(
+        new BN(eventId),
+        fakeTeamName, // Podajemy błędną nazwę
+        betAmount,
+      ).accounts({
+        player: userA.publicKey,
+        eventAccount: eventPda,
+        
+        optionAccount: fakeTeamPda, // <--- To konto NIE ISTNIEJE (nie ma go na chainie)
+        
+        vaultAccount: vaultPda,
+        betAccount: userABetPda, // Tu używamy istniejącego konta zakładu lub nowego, zależnie od logiki
+        systemProgram: SystemProgram.programId,
+      }).signers([userA]).rpc();
+
+      // Jeśli przeszło - błąd testu
+      throw new Error("KRYTYCZNY BŁĄD: Pozwolono obstawić na nieistniejącą opcję!");
+    } catch (error) {
+      // 4. Analiza błędu
+      // Oczekujemy błędu, który mówi, że konto nie jest zainicjalizowane.
+      // W Anchorze to zazwyczaj: "AccountNotInitialized" lub "The program expected this account to be already initialized"
+      
+      const errorString = JSON.stringify(error);
+      const isAccountError = errorString.includes("AccountNotInitialized") || 
+                             error.message.includes("Account not initialized") ||
+                             error.message.includes("Account does not exist");
+
+      if (isAccountError) {
+        console.log("Test udany. System odrzucił zakład na nieistniejącą drużynę (brak konta Option).");
+      } else {
+        // Jeśli to inny błąd (np. brak środków), logujemy go
+        console.log("Test nieudany. Przechwycono nieoczekiwany błąd:");
+        throw error;
+      }
+    }
+  });
+
   it("Standardowe obstawianie", async () => {
     // ustawienie czasu na chwilę po rozpoczęciu możliwości obstawiania
     currentClock = await client.getClock();
@@ -417,6 +473,92 @@ describe("Testy", () => {
     }).signers([userC]).rpc();
   });
 
+  it("Próba rozwiązania wydarzenia przez osobę nieuprawnioną (powinno się NIE udać)", async () => {
+    console.log("--- Testowanie Access Control dla resolveEvent ---");
+
+    // 1. Upewniamy się, że czas jest poprawny do zakończenia (żeby test nie upadł przez zły czas)
+    // Ustawiamy ten sam czas co w teście "Kończenie wydarzenia"
+    context.setClock(
+      new Clock(
+        currentClock.slot,
+        currentClock.epochStartTimestamp,
+        currentClock.epoch,
+        currentClock.leaderScheduleEpoch,
+        BigInt(bettingEnd + 100),
+      ),
+    );
+
+    try {
+      // 2. Próba ataku: UserA próbuje rozwiązać wydarzenie
+      await puppetProgram.methods.resolveEvent(
+        new BN(eventId),
+        nameTeamA,
+      ).accounts({
+        // UWAGA: Tu wstawiamy "oszusta". 
+        // Gdybyśmy zostawili tu authority.publicKey, a podpisali userA,
+        // błąd wyrzuciłby klient RPC (brak podpisu), a nie smart kontrakt.
+        // My chcemy sprawdzić, czy kontrakt odrzuci UserA jako authority.
+        authority: userA.publicKey, 
+        
+        eventAccount: eventPda,
+        vaultAccount: vaultPda,
+        systemProgram: SystemProgram.programId,
+      }).signers([userA]).rpc(); // Podpisuje UserA
+
+      // Jeśli transakcja przejdzie, to znaczy, że każdy może zakończyć wydarzenie -> BŁĄD
+      throw new Error("KRYTYCZNY BŁĄD: Zwykły użytkownik zdołał rozwiązać wydarzenie!");
+    } catch (error) {
+      // 3. Analiza błędu
+      // Oczekujemy błędu typu "Constraint" (np. adres się nie zgadza z zapisanym w state)
+      // lub customowego błędu "Unauthorized".
+      
+      const errorString = JSON.stringify(error);
+      const isConstraintError = errorString.includes("Constraint") || errorString.includes("A has_one constraint was violated");
+      const isAnchorError = error.message && error.message.includes("AnchorError");
+      
+      // Sprawdzamy czy kod błędu sugeruje brak uprawnień
+      // Może to być standardowy błąd Anchora (ConstraintAddress/ConstraintHasOne) 
+      // lub Twój własny błąd z Rusta.
+      if (isConstraintError || isAnchorError) {
+        console.log("Test udany. Smart kontrakt odrzucił nieuprawnionego użytkownika.");
+      } else {
+        console.log("Test nieudany. Otrzymano nieoczekiwany błąd:");
+        throw error;
+      }
+    }
+  });
+
+    it("Obstawianie po zakończeniu czasu (powinno się NIE udać)", async () => {
+    // Ustawienie czasu po zakończeniu zakładów
+    currentClock = await setClock(context, bettingEnd + 5);
+    logClock(currentClock);
+
+    try {
+      await puppetProgram.methods.placeBet(
+        new BN(eventId),
+        nameTeamA,
+        new BN(solToLamports(0.1)),
+      ).accounts({
+        player: userA.publicKey,
+        eventAccount: eventPda,
+        optionAccount: teamAPda,
+        vaultAccount: vaultPda,
+        betAccount: userABetPda, // Uwaga: tu może być potrzebne nowe konto/nowy seed jeśli userA już obstawił
+        systemProgram: SystemProgram.programId,
+      }).signers([userA]).rpc();
+
+      throw new Error("Powinno rzucić błąd BettingEnded!");
+    } catch (error) {
+       // Tutaj asercja błędu, tak jak w twoich poprzednich testach
+       const expectedErrorMessage = "BettingEnded"; // lub inny kod błędu z Rusta
+       if (error.error && error.error.errorCode && error.error.errorCode.code === expectedErrorMessage) {
+         console.log("Prawidłowo zablokowano zakład po czasie.");
+       } else {
+         throw error;
+       }
+    }
+});
+
   it("Kończenie wydarzenia", async () => {
     printBalance(context, "authority", authority.publicKey);
     printBalance(context, "Skarbiec", vaultPda);
@@ -445,7 +587,9 @@ describe("Testy", () => {
     printBalance(context, "Skarbiec", vaultPda);
   });
 
-  it("Odbieranie nagród", async () => {
+
+
+  it("Odbieranie nagród 1", async () => {
     printBalance(context, "authority", authority.publicKey);
     await puppetProgram.methods.claimReward(
       new BN(eventId),
@@ -470,7 +614,56 @@ describe("Testy", () => {
       optionAccount: teamBPda,
       systemProgram: SystemProgram.programId,
     }).signers([userC]).rpc();
+  });
 
+  it("Próba podwójnego odebrania nagrody (Double Claim) - powinna się nie udać", async () => {
+    console.log("--- Testowanie Double Claim dla UserA ---");
+
+    try {
+      // Próbujemy wywołać claimReward DRUGI RAZ dla tego samego użytkownika (UserA),
+      // który odebrał nagrodę w poprzednim teście.
+      await puppetProgram.methods.claimReward(
+        new BN(eventId),
+      ).accounts({
+        player: userA.publicKey,
+        authority: authority.publicKey,
+        vaultAccount: vaultPda,
+        betAccount: userABetPda, // To konto jest kluczowe
+        eventAccount: eventPda,
+        optionAccount: teamAPda,
+        systemProgram: SystemProgram.programId,
+      }).signers([userA]).rpc();
+
+      // Jeśli transakcja przejdzie bez błędu, rzucamy wyjątek, bo test ma upaść
+      throw new Error("KRYTYCZNY BŁĄD: Pozwolono na podwójne odebranie nagrody!");
+    } catch (error) {
+      // Logujemy błąd, aby zobaczyć co się stało
+      // console.log("Złapany błąd (to dobrze):", error);
+
+      // SCENARIUSZ A: Jeśli Twój kontrakt zamyka konto zakładu po wypłacie (close = user)
+      // Anchor rzuci błąd związany z tym, że konto nie istnieje lub nie zostało zainicjalizowane.
+      const isAccountClosedError = JSON.stringify(error).includes("AccountNotInitialized") || 
+                                   error.message.includes("Account does not exist");
+
+      // SCENARIUSZ B: Jeśli Twój kontrakt rzuca customowy błąd (np. AlreadyClaimed)
+      const expectedCustomError = "RewardAlreadyClaimed"; // Zmień na nazwę błędu z Twojego Rusta
+      const isCustomError = error.error && error.error.errorCode && error.error.errorCode.code === expectedCustomError;
+
+      if (isAccountClosedError) {
+        console.log("Test udany. Druga wypłata niemożliwa - konto zakładu zostało już zamknięte.");
+      } else if (isCustomError) {
+        console.log(`Test udany. Druga wypłata niemożliwa - złapano błąd logiczny: ${expectedCustomError}`);
+      } else {
+        // Jeśli to inny błąd (np. brak środków w skarbcu, błąd sygnatury), rzucamy go dalej
+        console.log("Test nieudany. Otrzymano nieoczekiwany błąd:");
+        throw error;
+      }
+    }
+  });
+
+  it("Odbieranie nagród 2 - zamykanie skarbca", async () => {
+    printBalance(context, "authority", authority.publicKey);
+    
     await puppetProgram.methods.claimReward(
       new BN(eventId),
     ).accounts({

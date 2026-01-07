@@ -9,7 +9,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("EuDe8zmbZeYuaADaJjp8F9zCHm9L7LuAvrsvqLdSCXN4");
+declare_id!("CBfwB3eCacRAXek6YNwJ6DVMRZNYJk55r9km2yPp3cXB");
 
 #[program]
 pub mod betting {

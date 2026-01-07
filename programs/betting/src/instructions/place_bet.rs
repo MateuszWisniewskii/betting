@@ -56,12 +56,12 @@ pub fn handler(ctx: Context<PlaceBet>, _event_id: u64, option: String, amount: u
 
     let current_time = Clock::get()?.unix_timestamp;
 
-    if bet.bet_placed {
-        return Err(ErrorCode::BetAlreadyPlaced.into());
-    }
-
     if current_time > (event_account.betting_end as i64) {
         return Err(ErrorCode::BettingEnded.into());
+    }
+    
+    if bet.bet_placed {
+        return Err(ErrorCode::BetAlreadyPlaced.into());
     }
 
     if current_time <= (event_account.betting_start as i64) {
