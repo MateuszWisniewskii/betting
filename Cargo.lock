@@ -252,14 +252,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "betting_manager"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "betting",
-]
-
-[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

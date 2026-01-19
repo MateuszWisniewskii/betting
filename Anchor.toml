@@ -7,7 +7,6 @@ skip-lint = false
 
 [programs.localnet]
 betting = "CBfwB3eCacRAXek6YNwJ6DVMRZNYJk55r9km2yPp3cXB"
-betting_manager = "4NEhfRfaaca7TQJnhKeHxnWqyxk1RiA8SJjxjhUjkFhZ"
 
 [registry]
 url = "https://api.apr.dev"
