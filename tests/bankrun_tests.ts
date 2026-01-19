@@ -300,7 +300,7 @@ describe("Testy", () => {
 
   it("Obstawianie przed otwarciem głosowania", async () => {
     currentClock = setClock(context, bettingStart - 50);
-    logClock(currentClock);
+  //  logClock(currentClock);
 
     const betAmount = new BN(solToLamports(0.25));
 
@@ -326,7 +326,7 @@ describe("Testy", () => {
       const expectedErrorMessage = "BettingNotStarted"; // Nazwa błędu z Rust
 
       if (error.error && error.error.errorCode && error.error.errorCode.code === expectedErrorMessage) {
-        console.log(`Test udany. Oczekiwany błąd przechwycony: ${expectedErrorMessage}`);
+     //   console.log(`Test udany. Oczekiwany błąd przechwycony: ${expectedErrorMessage}`);
       } else {
         // Jeśli błąd jest inny niż oczekiwano, rzucamy go dalej, a test upada
         console.log("Test nieudany. Przechwycono nieoczekiwany błąd:");
@@ -338,7 +338,7 @@ describe("Testy", () => {
   it("Dodawanie dryżyn do wydarzenia po rozpoczęciu obstawiania (powinno się NIE udać)", async () => {
     // ustawienie czasu po rozpoczęciu zakładów
     currentClock = await setClock(context, bettingStart + 10);
-    logClock(currentClock);
+   // logClock(currentClock);
 
     try {
       await puppetProgram.methods.initializeOptions(
@@ -358,7 +358,7 @@ describe("Testy", () => {
       const expectedErrorMessage = "AddingOptionsAfterBettingStart"; // Nazwa błędu z Rust
 
       if (error.error && error.error.errorCode && error.error.errorCode.code === expectedErrorMessage) {
-        console.log(`Test udany. Oczekiwany błąd przechwycony: ${expectedErrorMessage}`);
+     //   console.log(`Test udany. Oczekiwany błąd przechwycony: ${expectedErrorMessage}`);
       } else {
         // Jeśli błąd jest inny niż oczekiwano, rzucamy go dalej, a test upada
         console.log("Test nieudany. Przechwycono nieoczekiwany błąd:");
@@ -393,9 +393,9 @@ describe("Testy", () => {
       ).accounts({
         player: userA.publicKey,
         eventAccount: eventPda,
-        
+
         optionAccount: fakeTeamPda, // <--- To konto NIE ISTNIEJE (nie ma go na chainie)
-        
+
         vaultAccount: vaultPda,
         betAccount: userABetPda, // Tu używamy istniejącego konta zakładu lub nowego, zależnie od logiki
         systemProgram: SystemProgram.programId,
@@ -407,14 +407,14 @@ describe("Testy", () => {
       // 4. Analiza błędu
       // Oczekujemy błędu, który mówi, że konto nie jest zainicjalizowane.
       // W Anchorze to zazwyczaj: "AccountNotInitialized" lub "The program expected this account to be already initialized"
-      
+
       const errorString = JSON.stringify(error);
-      const isAccountError = errorString.includes("AccountNotInitialized") || 
-                             error.message.includes("Account not initialized") ||
-                             error.message.includes("Account does not exist");
+      const isAccountError = errorString.includes("AccountNotInitialized") ||
+        error.message.includes("Account not initialized") ||
+        error.message.includes("Account does not exist");
 
       if (isAccountError) {
-        console.log("Test udany. System odrzucił zakład na nieistniejącą drużynę (brak konta Option).");
+     //   console.log("Test udany. System odrzucił zakład na nieistniejącą drużynę (brak konta Option).");
       } else {
         // Jeśli to inny błąd (np. brak środków), logujemy go
         console.log("Test nieudany. Przechwycono nieoczekiwany błąd:");
@@ -427,7 +427,7 @@ describe("Testy", () => {
     // ustawienie czasu na chwilę po rozpoczęciu możliwości obstawiania
     currentClock = await client.getClock();
     setClock(context, bettingStart + 50);
-    logClock(currentClock);
+ //   logClock(currentClock);
 
     const betAmount = new BN(solToLamports(0.25));
     const twiceOfBetAmount = new BN(solToLamports(0.5));
@@ -474,7 +474,7 @@ describe("Testy", () => {
   });
 
   it("Próba rozwiązania wydarzenia przez osobę nieuprawnioną (powinno się NIE udać)", async () => {
-    console.log("--- Testowanie Access Control dla resolveEvent ---");
+  //  console.log("--- Testowanie Access Control dla resolveEvent ---");
 
     // 1. Upewniamy się, że czas jest poprawny do zakończenia (żeby test nie upadł przez zły czas)
     // Ustawiamy ten sam czas co w teście "Kończenie wydarzenia"
@@ -498,8 +498,8 @@ describe("Testy", () => {
         // Gdybyśmy zostawili tu authority.publicKey, a podpisali userA,
         // błąd wyrzuciłby klient RPC (brak podpisu), a nie smart kontrakt.
         // My chcemy sprawdzić, czy kontrakt odrzuci UserA jako authority.
-        authority: userA.publicKey, 
-        
+        authority: userA.publicKey,
+
         eventAccount: eventPda,
         vaultAccount: vaultPda,
         systemProgram: SystemProgram.programId,
@@ -511,16 +511,16 @@ describe("Testy", () => {
       // 3. Analiza błędu
       // Oczekujemy błędu typu "Constraint" (np. adres się nie zgadza z zapisanym w state)
       // lub customowego błędu "Unauthorized".
-      
+
       const errorString = JSON.stringify(error);
       const isConstraintError = errorString.includes("Constraint") || errorString.includes("A has_one constraint was violated");
       const isAnchorError = error.message && error.message.includes("AnchorError");
-      
+
       // Sprawdzamy czy kod błędu sugeruje brak uprawnień
       // Może to być standardowy błąd Anchora (ConstraintAddress/ConstraintHasOne) 
       // lub Twój własny błąd z Rusta.
       if (isConstraintError || isAnchorError) {
-        console.log("Test udany. Smart kontrakt odrzucił nieuprawnionego użytkownika.");
+   //     console.log("Test udany. Smart kontrakt odrzucił nieuprawnionego użytkownika.");
       } else {
         console.log("Test nieudany. Otrzymano nieoczekiwany błąd:");
         throw error;
@@ -549,19 +549,19 @@ describe("Testy", () => {
 
       throw new Error("Powinno rzucić błąd BettingEnded!");
     } catch (error) {
-       // Tutaj asercja błędu, tak jak w twoich poprzednich testach
-       const expectedErrorMessage = "BettingEnded"; // lub inny kod błędu z Rusta
-       if (error.error && error.error.errorCode && error.error.errorCode.code === expectedErrorMessage) {
-         console.log("Prawidłowo zablokowano zakład po czasie.");
-       } else {
-         throw error;
-       }
+      // Tutaj asercja błędu, tak jak w twoich poprzednich testach
+      const expectedErrorMessage = "BettingEnded"; // lub inny kod błędu z Rusta
+      if (error.error && error.error.errorCode && error.error.errorCode.code === expectedErrorMessage) {
+   //     console.log("Prawidłowo zablokowano zakład po czasie.");
+      } else {
+        throw error;
+      }
     }
 });
 
   it("Kończenie wydarzenia", async () => {
-    printBalance(context, "authority", authority.publicKey);
-    printBalance(context, "Skarbiec", vaultPda);
+   // printBalance(context, "authority", authority.publicKey);
+   // printBalance(context, "Skarbiec", vaultPda);
     context.setClock(
       new Clock(
         currentClock.slot,
@@ -572,7 +572,7 @@ describe("Testy", () => {
       ),
     );
     currentClock = await client.getClock();
-    console.log("Aktualny czas: ", currentClock.unixTimestamp);
+  //  console.log("Aktualny czas: ", currentClock.unixTimestamp);
 
     await puppetProgram.methods.resolveEvent(
       new BN(eventId),
@@ -583,11 +583,9 @@ describe("Testy", () => {
       vaultAccount: vaultPda,
       systemProgram: SystemProgram.programId,
     }).signers([authority]).rpc();
-    printBalance(context, "authority", authority.publicKey);
-    printBalance(context, "Skarbiec", vaultPda);
+  //  printBalance(context, "authority", authority.publicKey);
+   // printBalance(context, "Skarbiec", vaultPda);
   });
-
-
 
   it("Odbieranie nagród 1", async () => {
     printBalance(context, "authority", authority.publicKey);
@@ -640,13 +638,13 @@ describe("Testy", () => {
       // Logujemy błąd, aby zobaczyć co się stało
       // console.log("Złapany błąd (to dobrze):", error);
 
-      // SCENARIUSZ A: Jeśli Twój kontrakt zamyka konto zakładu po wypłacie (close = user)
+      // SCENARIUSZ A: Jeśli kontrakt zamyka konto zakładu po wypłacie (close = user)
       // Anchor rzuci błąd związany z tym, że konto nie istnieje lub nie zostało zainicjalizowane.
       const isAccountClosedError = JSON.stringify(error).includes("AccountNotInitialized") || 
                                    error.message.includes("Account does not exist");
 
-      // SCENARIUSZ B: Jeśli Twój kontrakt rzuca customowy błąd (np. AlreadyClaimed)
-      const expectedCustomError = "RewardAlreadyClaimed"; // Zmień na nazwę błędu z Twojego Rusta
+      // SCENARIUSZ B: Jeślikontrakt rzuca customowy błąd (np. AlreadyClaimed)
+      const expectedCustomError = "RewardAlreadyClaimed"; 
       const isCustomError = error.error && error.error.errorCode && error.error.errorCode.code === expectedCustomError;
 
       if (isAccountClosedError) {
