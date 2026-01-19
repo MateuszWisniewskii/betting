@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::ErrorCode,EventAccount, OptionAccount, ANCHOR_DISCRIMINATOR_SIZE};
+use crate::{ANCHOR_DISCRIMINATOR_SIZE, EventAccount, OPTION_SEED, OptionAccount, error::ErrorCode};
 
 #[derive(Accounts)]
 #[instruction(_event_id: u64, option: String)]
@@ -12,7 +12,7 @@ pub struct InitializeOptions<'info> {
         init,
         payer = authority,
         space = ANCHOR_DISCRIMINATOR_SIZE + OptionAccount::INIT_SPACE,
-        seeds = [b"option_seed".as_ref(), _event_id.to_le_bytes().as_ref(), option.as_ref()],
+        seeds = [OPTION_SEED.as_bytes(), _event_id.to_le_bytes().as_ref(), option.as_ref()],
         bump
     )]
     pub option_account: Account<'info, OptionAccount>,
@@ -39,7 +39,10 @@ pub fn handler(ctx: Context<InitializeOptions>, _event_id: u64, option: String) 
     option_account.option_name = option;
     option_account.option_votes = 0;
     option_account.option_pool = 0;
-    event.betting_options_index = event.betting_options_index.checked_add(1).ok_or(ErrorCode::Overflow)?;
+    event.betting_options_index = event
+        .betting_options_index
+        .checked_add(1)
+        .ok_or(ErrorCode::Overflow)?;
 
     msg!("Nazwa drużyny: {}", option_account.option_name);
     msg!("Ilość oddanych zakładów: {}", option_account.option_votes);

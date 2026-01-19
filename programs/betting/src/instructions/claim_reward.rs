@@ -6,7 +6,7 @@ use anchor_lang::{
 use anchor_lang::solana_program::program::invoke_signed;
 use anchor_lang::solana_program::system_instruction;
 
-use crate::{error::ErrorCode, BetAccount, EventAccount, OptionAccount};
+use crate::{BET_SEED, BetAccount, EVENT_SEED, EventAccount, OPTION_SEED, OptionAccount, VAULT_SEED, error::ErrorCode};
 
 #[derive(Accounts)]
 #[instruction(_event_id: u64)]
@@ -25,14 +25,14 @@ pub struct ClaimReward<'info> {
     /// CHECK: There is no data. Konto do trzymania waluty.
     #[account(
         mut,
-        seeds = [b"vault".as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [VAULT_SEED.as_bytes(), _event_id.to_le_bytes().as_ref()],
         bump
     )]
     pub vault_account: AccountInfo<'info>,
 
     #[account(
         mut,
-        seeds = [b"bet".as_ref(), player.key().as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [BET_SEED.as_bytes(), player.key().as_ref(), _event_id.to_le_bytes().as_ref()],
         bump,
         constraint = bet_account.player == player.key()
     )]
@@ -40,7 +40,7 @@ pub struct ClaimReward<'info> {
 
     #[account(
         mut,
-        seeds = [b"event_seed".as_ref(), _event_id.to_le_bytes().as_ref()],
+        seeds = [EVENT_SEED.as_bytes(), _event_id.to_le_bytes().as_ref()],
         bump,
         constraint = event_account.event_resolved
     )]
@@ -48,7 +48,7 @@ pub struct ClaimReward<'info> {
 
     #[account(
         mut,
-        seeds = [b"option_seed".as_ref(), _event_id.to_le_bytes().as_ref(), bet_account.option.as_ref()],
+        seeds = [OPTION_SEED.as_bytes(), _event_id.to_le_bytes().as_ref(), bet_account.option.as_ref()],
         bump
     )]
     pub option_account: Account<'info, OptionAccount>,
