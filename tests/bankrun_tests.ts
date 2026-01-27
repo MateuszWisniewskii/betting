@@ -543,16 +543,15 @@ describe("Testy", () => {
         eventAccount: eventPda,
         optionAccount: teamAPda,
         vaultAccount: vaultPda,
-        betAccount: userABetPda, // Uwaga: tu może być potrzebne nowe konto/nowy seed jeśli userA już obstawił
+        betAccount: userABetPda, 
         systemProgram: SystemProgram.programId,
       }).signers([userA]).rpc();
 
       throw new Error("Powinno rzucić błąd BettingEnded!");
     } catch (error) {
-      // Tutaj asercja błędu, tak jak w twoich poprzednich testach
-      const expectedErrorMessage = "BettingEnded"; // lub inny kod błędu z Rusta
+      const expectedErrorMessage = "BettingEnded"; 
       if (error.error && error.error.errorCode && error.error.errorCode.code === expectedErrorMessage) {
-   //     console.log("Prawidłowo zablokowano zakład po czasie.");
+        console.log("Prawidłowo zablokowano zakład po czasie.");
       } else {
         throw error;
       }
@@ -560,8 +559,8 @@ describe("Testy", () => {
 });
 
   it("Kończenie wydarzenia", async () => {
-   // printBalance(context, "authority", authority.publicKey);
-   // printBalance(context, "Skarbiec", vaultPda);
+    printBalance(context, "authority", authority.publicKey);
+    printBalance(context, "Skarbiec", vaultPda);
     context.setClock(
       new Clock(
         currentClock.slot,
@@ -572,7 +571,7 @@ describe("Testy", () => {
       ),
     );
     currentClock = await client.getClock();
-  //  console.log("Aktualny czas: ", currentClock.unixTimestamp);
+    console.log("Aktualny czas: ", currentClock.unixTimestamp);
 
     await puppetProgram.methods.resolveEvent(
       new BN(eventId),
@@ -583,8 +582,8 @@ describe("Testy", () => {
       vaultAccount: vaultPda,
       systemProgram: SystemProgram.programId,
     }).signers([authority]).rpc();
-  //  printBalance(context, "authority", authority.publicKey);
-   // printBalance(context, "Skarbiec", vaultPda);
+    printBalance(context, "authority", authority.publicKey);
+    printBalance(context, "Skarbiec", vaultPda);
   });
 
   it("Odbieranie nagród 1", async () => {
@@ -636,7 +635,7 @@ describe("Testy", () => {
       throw new Error("KRYTYCZNY BŁĄD: Pozwolono na podwójne odebranie nagrody!");
     } catch (error) {
       // Logujemy błąd, aby zobaczyć co się stało
-      // console.log("Złapany błąd (to dobrze):", error);
+       console.log("Złapany błąd (to dobrze):", error);
 
       // SCENARIUSZ A: Jeśli kontrakt zamyka konto zakładu po wypłacie (close = user)
       // Anchor rzuci błąd związany z tym, że konto nie istnieje lub nie zostało zainicjalizowane.
